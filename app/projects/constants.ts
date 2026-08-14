@@ -1,0 +1,81 @@
+import type { Project } from './types';
+
+export const projects: Project[] = [
+	{
+		title: 'Bunian — Official Website',
+		src: 'bunianlandingpage.png',
+		color: '#e8e8e8',
+		url: 'https://bunian.online',
+		role: 'Full-Stack Developer',
+	},
+	{
+		title: 'Hodory — Attendance System',
+		src: 'hodoryteacher.png',
+		color: '#d2d2d2',
+		url: 'https://github.com/Sidali-Djeghbal/hodory-attendance-system',
+		role: 'Full-Stack Developer',
+	},
+	{
+		title: 'Daad Blockly',
+		src: 'daadblockly.png',
+		color: '#dddddd',
+		url: 'https://github.com/daadLang/daad-blockly',
+		role: 'Author & Maintainer',
+	},
+	{
+		title: 'Bunian — CMS',
+		src: 'bunianCMS.png',
+		color: '#dddddd',
+		url: '',
+		role: 'Full-Stack Developer',
+	},
+	{
+		title: 'TG Blocks',
+		src: 'tgblocks.svg',
+		color: '#c9c9c9',
+		url: 'https://tgblocks.netlify.app',
+		role: 'Author & Lead Developer',
+	},
+	{
+		title: 'Mohasabat al-Nafs',
+		src: 'mouhasabatnafs.png',
+		color: '#e8e8e8',
+		url: 'https://mouhasabat-nafs.netlify.app',
+		role: 'Author & Lead Developer',
+	},
+	{
+		title: 'HaramFilter',
+		src: 'haramfilter.png',
+		color: '#dddddd',
+		url: 'https://github.com/Sidali-Djeghbal/HaramFilter',
+		role: 'Author',
+	},
+	{
+		title: 'Solveit 3.0',
+		src: 'solveit3landingpage.png',
+		color: '#c2c2c2',
+		url: 'https://solve-it-black-hole-edition.vercel.app/',
+		role: 'Frontend Contributor',
+	},
+	{
+		title: 'UDEMIHA',
+		src: 'udemiha.png',
+		color: '#c9c9c9',
+		url: 'https://udemiha.netlify.app',
+		role: 'Author',
+	},
+	{
+		title: 'SuperMarket Management',
+		src: 'hypermarketsalesmanagement.jpeg',
+		color: '#d2d2d2',
+		url: 'https://github.com/Sidali-Djeghbal/SuperMarketManagement',
+		role: 'Author',
+	},
+	{
+		title: 'hyperland-waybar-prayertimes',
+		src: 'hyperlandprayertimes.png',
+		color: '#e8e8e8',
+		url: 'https://github.com/Sidali-Djeghbal/hyperland-waybar-prayertimes',
+		role: 'Author',
+	},
+];
