@@ -34,7 +34,11 @@ const nextConfig: NextConfig = {
 	},
 };
 
-const withMDX = createMDX({});
+const withMDX = createMDX({
+	options: {
+		providerImportSource: '',
+	},
+});
 
 export default withMDX(nextConfig);
 

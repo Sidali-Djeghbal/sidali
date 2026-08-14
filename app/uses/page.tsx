@@ -2,6 +2,7 @@ import { Fragment } from 'react';
 import Header from '../components/header';
 import { components } from '../components/mdx';
 import Content from './content.mdx';
+import SkillsSection from './skills-section';
 import UsesTitle from './uses-title';
 
 export const metadata = {
@@ -15,6 +16,7 @@ export default function Page() {
 			<Header title='Uses' />
 			<UsesTitle />
 			<Content components={components} />
+			<SkillsSection />
 		</Fragment>
 	);
 }
