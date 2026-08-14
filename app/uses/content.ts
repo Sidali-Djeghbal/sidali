@@ -1,10 +1,4 @@
----
-title: 'Uses Page'
-publishedAt: '2024-12-08'
-summary: 'Things I use'
----
-
-## Editor
+export const content = `## Editor
 
 - [VS Code](https://code.visualstudio.com/) is my editor of choice, with a growing pile of extensions
 
@@ -20,3 +14,4 @@ summary: 'Things I use'
 ## Communication
 
 - [Telegram](https://telegram.org/) for messaging and staying in touch
+`;

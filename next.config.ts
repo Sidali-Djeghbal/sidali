@@ -9,6 +9,7 @@ const nextConfig: NextConfig = {
 	transpilePackages: ['next-mdx-remote'],
 	reactCompiler: true,
 	images: {
+		unoptimized: true,
 		dangerouslyAllowSVG: true,
 		contentDispositionType: 'attachment',
 		contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
@@ -34,3 +35,7 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
+
+import { initOpenNextCloudflareForDev } from '@opennextjs/cloudflare';
+
+initOpenNextCloudflareForDev();
