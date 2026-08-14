@@ -2,6 +2,7 @@ import classNames from 'classnames';
 import Link from 'next/link';
 import { merryWeather } from '../../fonts';
 import { AtSignIcon } from '../layouts/icons/at-sign-icon';
+import { DownloadIcon } from '../layouts/icons/download-icon';
 import { GithubIcon } from '../layouts/icons/github-icon';
 import { LinkedinIcon } from '../layouts/icons/linkedin-icon';
 import SplashCursor from '../splash-cursor';
@@ -76,6 +77,16 @@ export default function Hero() {
 										<AtSignIcon className='h-9 w-9' />
 									</Link>
 								</div>
+								<a
+									href='/static/pdf/resume.pdf'
+									download
+									aria-label='Download CV'
+									data-skip-splash-cursor
+									className='inline-flex items-center gap-2 rounded-full border border-primary-500 px-4 py-2 mt-3 text-primary-500 hover:bg-primary-500 hover:text-white transition-colors duration-200 dark:hover:text-black'
+								>
+									<DownloadIcon />
+									Download CV
+								</a>
 							</div>
 							<div className='h-14 border-l border-gray-300' />
 							<div

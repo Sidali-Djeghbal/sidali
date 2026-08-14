@@ -1,7 +1,7 @@
 import { Fragment } from 'react';
 import Header from '../components/header';
-import { CustomMDX } from '../components/mdx';
-import { content } from './content';
+import { components } from '../components/mdx';
+import Content from './content.mdx';
 import UsesTitle from './uses-title';
 
 export const metadata = {
@@ -14,7 +14,7 @@ export default function Page() {
 		<Fragment>
 			<Header title='Uses' />
 			<UsesTitle />
-			<CustomMDX source={content} />
+			<Content components={components} />
 		</Fragment>
 	);
 }

@@ -1,4 +1,5 @@
 import path from 'node:path';
+import createMDX from '@next/mdx';
 import type { NextConfig } from 'next';
 
 const umami_url = process.env.NEXT_PUBLIC_UMAMI_WEBSITE_URL ?? '';
@@ -6,7 +7,6 @@ const umami_url = process.env.NEXT_PUBLIC_UMAMI_WEBSITE_URL ?? '';
 const nextConfig: NextConfig = {
 	reactStrictMode: true,
 	pageExtensions: ['ts', 'tsx'],
-	transpilePackages: ['next-mdx-remote'],
 	reactCompiler: true,
 	images: {
 		unoptimized: true,
@@ -34,7 +34,9 @@ const nextConfig: NextConfig = {
 	},
 };
 
-export default nextConfig;
+const withMDX = createMDX({});
+
+export default withMDX(nextConfig);
 
 import { initOpenNextCloudflareForDev } from '@opennextjs/cloudflare';
 

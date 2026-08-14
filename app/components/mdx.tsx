@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { MDXRemote, type MDXRemoteProps } from 'next-mdx-remote/rsc';
 import type { ComponentPropsWithoutRef } from 'react';
 
 type HeadingProps = ComponentPropsWithoutRef<'h1'>;
@@ -138,12 +137,3 @@ export const components = {
 		/>
 	),
 };
-
-export function CustomMDX(props: MDXRemoteProps) {
-	return (
-		<MDXRemote
-			{...props}
-			components={{ ...components, ...(props.components || {}) }}
-		/>
-	);
-}
