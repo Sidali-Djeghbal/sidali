@@ -20,20 +20,18 @@ export default function Hero() {
 					<div className='absolute top-[20%] md:top-[40%] max-w-5xl flex-col space-y-4 justify-center px-8 md:px-24 lg:ml-14'>
 						<h1 className='text-2xl font-medium md:mr-4 md:text-4xl'>
 							Welcome to my{' '}
-							<span className='font-bold'>personal portfolio — </span> or, as I
-							like to call it, my{' '}
+							<span className='font-bold'>personal portfolio — </span> an{' '}
 							<span className='italic border-b border-b-primary-500'>
-								playground
+								engineering
 							</span>{' '}
-							on the web.
+							playground on the web.
 						</h1>
 						<section className='relative z-10'>
 							<p className='text-base text-justify'>
-								I&apos;m Sidali DJEGHBAL — an AI Engineer Undergrad and
-								full-stack developer. I build web platforms that matter —
-								intelligent, accessible, and engineered to scale. Right now I
-								work as a Full-Stack Engineer at Algerian Tech Makers, building
-								the official website and CMS for{' '}
+								I&apos;m Sidali DJEGHBAL — an AI Engineering undergrad and
+								full-stack developer, I build accessible, scalable web platforms
+								that matter. Right now, I'm a Full-Stack Engineer at Algerian
+								Tech Makers, developing the official website and CMS for{' '}
 								<a
 									href='https://bunian.online'
 									className='underline-magical'
@@ -46,10 +44,10 @@ export default function Hero() {
 								.
 							</p>
 						</section>
-						<section className='relative z-10 flex space-x-4 items-center text-sm'>
+						<section className='relative z-10 flex flex-col gap-6 items-start text-sm md:flex-row md:flex-wrap md:items-center'>
 							<div>
 								<p>More about me: </p>
-								<div className='flex -ml-2'>
+								<div className='flex flex-wrap items-center -ml-2'>
 									<Link
 										href='https://www.linkedin.com/in/sidali-djeghbal'
 										target='_blank'
@@ -76,21 +74,21 @@ export default function Hero() {
 									>
 										<AtSignIcon className='h-9 w-9' />
 									</Link>
+									<a
+										href='/static/pdf/resume.pdf'
+										download
+										aria-label='Download CV'
+										data-skip-splash-cursor
+										className='inline-flex items-center gap-2 rounded-full border border-primary-500 px-4 py-2 ml-2 text-primary-500 hover:bg-primary-500 hover:text-white transition-colors duration-200 dark:hover:text-black'
+									>
+										<DownloadIcon />
+										Download CV
+									</a>
 								</div>
-								<a
-									href='/static/pdf/resume.pdf'
-									download
-									aria-label='Download CV'
-									data-skip-splash-cursor
-									className='inline-flex items-center gap-2 rounded-full border border-primary-500 px-4 py-2 mt-3 text-primary-500 hover:bg-primary-500 hover:text-white transition-colors duration-200 dark:hover:text-black'
-								>
-									<DownloadIcon />
-									Download CV
-								</a>
 							</div>
-							<div className='h-14 border-l border-gray-300' />
+							<div className='hidden h-14 border-l border-gray-300 md:block' />
 							<div
-								className='flex flex-wrap space-x-3 space-y-1'
+								className='flex flex-wrap gap-x-3 gap-y-1'
 								data-skip-splash-cursor
 							>
 								<Link href='/projects'>/projects</Link>
