@@ -5,7 +5,7 @@ const personSchema = {
 	'@type': 'Person',
 	name: 'Sidali DJEGHBAL',
 	url: siteUrl,
-	image: `${siteUrl}/opengraph-image`,
+	image: `${siteUrl}/og-image.png`,
 	jobTitle: 'AI Engineering Undergrad & Full-Stack Developer',
 	description:
 		'AI Engineering Undergrad and Full-Stack Developer building accessible, scalable web platforms that matter.',

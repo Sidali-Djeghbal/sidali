@@ -45,12 +45,22 @@ export const metadata: Metadata = {
 		description:
 			'AI Engineering Undergrad & Full-Stack Developer building accessible, scalable web platforms that matter.',
 		locale: 'en_US',
+		images: [
+			{
+				url: '/og-image.png',
+				width: 1200,
+				height: 630,
+				alt: 'Sidali DJEGHBAL — AI Engineering Undergrad & Full-Stack Developer',
+				type: 'image/png',
+			},
+		],
 	},
 	twitter: {
 		card: 'summary_large_image',
 		title: 'Sidali DJEGHBAL | AI Engineering Undergrad & Full-Stack Developer',
 		description:
 			'AI Engineering Undergrad & Full-Stack Developer building accessible, scalable web platforms that matter.',
+		images: ['/og-image.png'],
 	},
 	robots: {
 		index: true,
