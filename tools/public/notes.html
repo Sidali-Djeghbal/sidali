@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Notes — Sidali DJEGHBAL</title>
+		<meta
+			name="description"
+			content="Personal notes, synced across devices on Cloudflare D1."
+		/>
+		<meta name="theme-color" content="#000000" />
+		<link
+			rel="icon"
+			href="https://sidali-djeghbal.dev/static/favicons/favicon-32x32.png"
+			type="image/png"
+		/>
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link
+			href="https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700;900&family=Mukta:wght@200;300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap"
+			rel="stylesheet"
+		/>
+		<link rel="stylesheet" href="/styles.css" />
+		<link rel="stylesheet" href="/notes.css" />
+		<script>
+			(function () {
+				try {
+					var stored = localStorage.getItem('tools-theme');
+					var dark = stored ? stored === 'dark' : true;
+					document.documentElement.classList.toggle('dark', dark);
+				} catch (e) {}
+			})();
+		</script>
+	</head>
+	<body>
+		<div id="splash">
+			<button
+				id="theme-toggle"
+				type="button"
+				aria-label="Toggle dark mode"
+				title="Toggle dark mode"
+				data-skip-splash-cursor
+			></button>
+
+			<header class="page">
+				<p class="kicker">
+					<a href="/" class="back-link" data-skip-splash-cursor>&larr; Tools</a>
+				</p>
+				<h1>Notes</h1>
+				<p class="subtitle">Synced across devices on Cloudflare D1.</p>
+			</header>
+
+			<main id="notes-app" class="page notes-app">
+				<section id="login-view" class="login hidden">
+					<form id="login-form" class="login-card">
+						<label class="login-label" for="password">Password</label>
+						<input
+							id="password"
+							name="password"
+							type="password"
+							class="login-input"
+							autocomplete="current-password"
+							required
+						/>
+						<p id="login-error" class="login-error hidden"></p>
+						<button type="submit" class="login-button">Unlock notes</button>
+					</form>
+				</section>
+
+				<section id="workspace-view" class="workspace hidden">
+					<aside class="notes-list">
+						<button id="new-note" type="button" class="new-note">
+							+ New note
+						</button>
+						<ul id="notes-list" class="notes-list-items"></ul>
+					</aside>
+					<section id="editor" class="editor hidden">
+						<input
+							id="note-title"
+							type="text"
+							class="note-title"
+							placeholder="Untitled"
+							aria-label="Note title"
+						/>
+						<textarea
+							id="note-content"
+							class="note-content"
+							placeholder="Start writing…"
+							spellcheck="false"
+						></textarea>
+						<div class="editor-toolbar">
+							<button id="delete-note" type="button" class="delete-note">
+								Delete
+							</button>
+							<span class="editor-status" id="editor-status"></span>
+						</div>
+					</section>
+					<div id="empty-editor" class="editor-empty hidden">
+						<p>Select a note or create a new one.</p>
+					</div>
+				</section>
+			</main>
+
+			<footer class="page">
+				<a
+					href="https://sidali-djeghbal.dev"
+					target="_blank"
+					rel="noreferrer"
+					data-skip-splash-cursor
+					class="underline-magical"
+					>Sidali DJEGHBAL</a
+				>
+			</footer>
+		</div>
+
+		<script src="/app.js"></script>
+		<script src="/notes.js"></script>
+	</body>
+</html>
