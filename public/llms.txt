@@ -1,0 +1,23 @@
+# Sidali DJEGHBAL
+
+> Sidali DJEGHBAL is an AI Engineering undergraduate and full-stack developer building accessible, scalable web platforms. He is currently a Full-Stack Engineer at Algerian Tech Makers, developing the official website and CMS for Bunian. This site showcases his portfolio: selected projects, experience, the tools he uses, and live stats.
+
+## Key pages
+
+- [Home](https://sidali-djeghbal.dev/): Personal introduction, current role, and contact links (LinkedIn, GitHub, email).
+- [Projects](https://sidali-djeghbal.dev/projects): Selected projects worth sharing, with previews and tech details.
+- [Uses](https://sidali-djeghbal.dev/uses): The tools, software, and gear Sidali uses for development.
+- [Stats](https://sidali-djeghbal.dev/stats): Live personal stats gathered from public APIs (GitHub contributions, WakaTime).
+
+## Contact
+
+- Email: connect@sidali-djeghbal.dev
+- LinkedIn: https://www.linkedin.com/in/sidali-djeghbal
+- GitHub: https://github.com/sidali-djeghbal
+
+## Profile
+
+- Name: Sidali DJEGHBAL
+- Role: AI Engineering Undergrad & Full-Stack Developer
+- Employer: Algerian Tech Makers (Full-Stack Engineer)
+- Focus areas: artificial intelligence, full-stack web development, accessible design, scalable architecture.

@@ -49,6 +49,12 @@ function SplashCursor({
 		const container = containerRef.current;
 		if (!canvas || !container) return;
 
+		if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+			return;
+		}
+
+		const isMobile = window.innerWidth < 768;
+
 		class Pointer {
 			id = -1;
 			texcoordX = 0;
@@ -63,9 +69,9 @@ function SplashCursor({
 		}
 
 		const config = {
-			SIM_RESOLUTION,
-			DYE_RESOLUTION,
-			CAPTURE_RESOLUTION,
+			SIM_RESOLUTION: isMobile ? 96 : SIM_RESOLUTION,
+			DYE_RESOLUTION: isMobile ? 512 : DYE_RESOLUTION,
+			CAPTURE_RESOLUTION: isMobile ? 256 : CAPTURE_RESOLUTION,
 			DENSITY_DISSIPATION,
 			VELOCITY_DISSIPATION,
 			PRESSURE,
@@ -922,13 +928,40 @@ function SplashCursor({
 		let colorUpdateTimer = 0.0;
 
 		function updateFrame() {
+			if (!running) return;
+			if (Date.now() - lastActivity > IDLE_TIMEOUT) {
+				stop();
+				return;
+			}
 			const dt = calcDeltaTime();
 			if (resizeCanvas()) initFramebuffers();
 			updateColors(dt);
 			applyInputs();
 			step(dt);
 			render(null);
-			requestAnimationFrame(updateFrame);
+			rafId = requestAnimationFrame(updateFrame);
+		}
+
+		let rafId = 0;
+		let running = false;
+		let lastActivity = Date.now();
+		const IDLE_TIMEOUT = 3000;
+
+		function start() {
+			if (running) return;
+			running = true;
+			lastActivity = Date.now();
+			rafId = requestAnimationFrame(updateFrame);
+		}
+
+		function stop() {
+			running = false;
+			cancelAnimationFrame(rafId);
+		}
+
+		function markActivity() {
+			lastActivity = Date.now();
+			if (!running) start();
 		}
 
 		function calcDeltaTime() {
@@ -1354,6 +1387,7 @@ function SplashCursor({
 		}
 
 		const handleMouseDown = (e: MouseEvent) => {
+			markActivity();
 			if (shouldSkipSplash(e.target)) return;
 
 			const pos = getRelativePosition(e.clientX, e.clientY);
@@ -1366,6 +1400,7 @@ function SplashCursor({
 
 		let firstMouseMove = true;
 		const handleMouseMove = (e: MouseEvent) => {
+			markActivity();
 			if (shouldSkipSplash(e.target)) return;
 
 			const pos = getRelativePosition(e.clientX, e.clientY);
@@ -1384,6 +1419,7 @@ function SplashCursor({
 		};
 
 		const handleTouchStart = (e: TouchEvent) => {
+			markActivity();
 			if (shouldSkipSplash(e.target)) return;
 
 			const touches = e.targetTouches;
@@ -1397,6 +1433,7 @@ function SplashCursor({
 		};
 
 		const handleTouchMove = (e: TouchEvent) => {
+			markActivity();
 			if (shouldSkipSplash(e.target)) return;
 
 			const touches = e.targetTouches;
@@ -1417,22 +1454,33 @@ function SplashCursor({
 			}
 		};
 
+		const handleVisibilityChange = () => {
+			if (document.hidden) {
+				stop();
+			} else {
+				start();
+			}
+		};
+
 		// Attach event listeners to container
 		container.addEventListener('mousedown', handleMouseDown);
 		container.addEventListener('mousemove', handleMouseMove);
 		container.addEventListener('touchstart', handleTouchStart);
 		container.addEventListener('touchmove', handleTouchMove, false);
 		container.addEventListener('touchend', handleTouchEnd);
+		document.addEventListener('visibilitychange', handleVisibilityChange);
 
-		updateFrame();
+		start();
 
 		// Cleanup
 		return () => {
+			stop();
 			container.removeEventListener('mousedown', handleMouseDown);
 			container.removeEventListener('mousemove', handleMouseMove);
 			container.removeEventListener('touchstart', handleTouchStart);
 			container.removeEventListener('touchmove', handleTouchMove);
 			container.removeEventListener('touchend', handleTouchEnd);
+			document.removeEventListener('visibilitychange', handleVisibilityChange);
 		};
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [

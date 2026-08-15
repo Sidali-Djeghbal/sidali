@@ -13,5 +13,5 @@ export const merryWeather = Merriweather({
 	variable: '--font-merriweather',
 	subsets: ['latin'],
 	display: 'swap',
-	preload: true,
+	preload: false,
 });

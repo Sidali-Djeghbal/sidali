@@ -4,17 +4,95 @@ import ThemeProvider from 'app/components/providers/ThemeProvider';
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import ThemeSwitch from './components/layouts/theme-switch/theme-switch';
+import JsonLd from './components/seo/json-ld';
 import { mukta } from './fonts';
 import './tailwind.css';
 
+const siteUrl = 'https://sidali-djeghbal.dev';
+
 export const metadata: Metadata = {
+	metadataBase: new URL(siteUrl),
 	title: {
+		default:
+			'Sidali DJEGHBAL | AI Engineering Undergrad & Full-Stack Developer',
 		template: '%s | Sidali DJEGHBAL',
-		default: 'Sidali DJEGHBAL',
 	},
 	description:
-		'AI Engineer Undergrad | Full-Stack Developer building scalable software and intelligent tools.',
-	metadataBase: new URL('https://sidali-djeghbal.dev'),
+		"I'm Sidali DJEGHBAL — an AI Engineering undergrad and full-stack developer building accessible, scalable web platforms that matter. Explore my projects, experience, and the tools I use.",
+	applicationName: 'Sidali DJEGHBAL',
+	authors: [{ name: 'Sidali DJEGHBAL', url: siteUrl }],
+	creator: 'Sidali DJEGHBAL',
+	publisher: 'Sidali DJEGHBAL',
+	category: 'technology',
+	keywords: [
+		'Sidali DJEGHBAL',
+		'sidali djeghbal',
+		'AI engineering',
+		'AI engineer',
+		'full-stack developer',
+		'full stack engineer',
+		'web developer',
+		'software engineer',
+		'portfolio',
+		'Algerian developer',
+		'open source',
+	],
+	openGraph: {
+		type: 'website',
+		url: siteUrl,
+		siteName: 'Sidali DJEGHBAL',
+		title: 'Sidali DJEGHBAL | AI Engineering Undergrad & Full-Stack Developer',
+		description:
+			'AI Engineering Undergrad & Full-Stack Developer building accessible, scalable web platforms that matter.',
+		locale: 'en_US',
+	},
+	twitter: {
+		card: 'summary_large_image',
+		title: 'Sidali DJEGHBAL | AI Engineering Undergrad & Full-Stack Developer',
+		description:
+			'AI Engineering Undergrad & Full-Stack Developer building accessible, scalable web platforms that matter.',
+	},
+	robots: {
+		index: true,
+		follow: true,
+		googleBot: {
+			index: true,
+			follow: true,
+			'max-video-preview': -1,
+			'max-image-preview': 'large',
+			'max-snippet': -1,
+		},
+	},
+	alternates: {
+		canonical: siteUrl,
+	},
+	icons: {
+		icon: [
+			{
+				url: '/static/favicons/favicon-32x32.png',
+				sizes: '32x32',
+				type: 'image/png',
+			},
+			{
+				url: '/static/favicons/favicon-16x16.png',
+				sizes: '16x16',
+				type: 'image/png',
+			},
+			{ url: '/static/favicons/favicon.ico', type: 'image/x-icon' },
+		],
+		apple: [
+			{
+				url: '/static/favicons/apple-touch-icon.png',
+				sizes: '180x180',
+				type: 'image/png',
+			},
+		],
+	},
+	formatDetection: {
+		email: false,
+		address: false,
+		telephone: false,
+	},
 };
 
 interface RootLayoutProps {
@@ -25,28 +103,6 @@ export default function RootLayout({ children }: RootLayoutProps) {
 	return (
 		<html lang='en' suppressHydrationWarning className={mukta.className}>
 			<head>
-				<link
-					rel='apple-touch-icon'
-					sizes='180x180'
-					href='/static/favicons/apple-touch-icon.png'
-				/>
-				<link
-					rel='icon'
-					type='image/png'
-					sizes='32x32'
-					href='/static/favicons/favicon-32x32.png'
-				/>
-				<link
-					rel='icon'
-					type='image/png'
-					sizes='16x16'
-					href='/static/favicons/favicon-16x16.png'
-				/>
-				<link
-					rel='icon'
-					type='image/x-icon'
-					href='/static/favicons/favicon.ico'
-				/>
 				<meta name='msapplication-TileColor' content='#000000' />
 				<meta name='theme-color' content='#000000' />
 			</head>
@@ -58,6 +114,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
 				>
 					<LenisProvider>
 						<ThemeSwitch />
+						<JsonLd />
 						{children}
 					</LenisProvider>
 					{process.env.NODE_ENV === 'production' && <Analytics />}
