@@ -49,7 +49,12 @@ function SplashCursor({
 		const container = containerRef.current;
 		if (!canvas || !container) return;
 
-		if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+		const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
+
+		if (
+			window.matchMedia('(prefers-reduced-motion: reduce)').matches &&
+			!isTouchDevice
+		) {
 			return;
 		}
 
@@ -945,7 +950,7 @@ function SplashCursor({
 		let rafId = 0;
 		let running = false;
 		let lastActivity = Date.now();
-		const IDLE_TIMEOUT = 3000;
+		const IDLE_TIMEOUT = isTouchDevice ? Number.POSITIVE_INFINITY : 3000;
 
 		function start() {
 			if (running) return;
