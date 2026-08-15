@@ -16,11 +16,12 @@
 
 services:
   - type: web
-    name: docmost
+    name: docmost-eu
     runtime: image
     image:
       url: docmost/docmost:latest
     plan: free
+    region: frankfurt
     healthCheckPath: /api/health
 
     envVars:
