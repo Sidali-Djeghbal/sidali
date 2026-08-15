@@ -44,13 +44,6 @@ export const projects: Project[] = [
 		role: 'Author & Lead Developer',
 	},
 	{
-		title: 'HaramFilter',
-		src: 'haramfilter.webp',
-		color: '#dddddd',
-		url: 'https://github.com/Sidali-Djeghbal/HaramFilter',
-		role: 'Author',
-	},
-	{
 		title: 'Solveit 3.0',
 		src: 'solveit3landingpage.webp',
 		color: '#c2c2c2',

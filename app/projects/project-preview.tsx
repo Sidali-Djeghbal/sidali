@@ -106,8 +106,8 @@ export default function ProjectPreview({ modal, projects }: ProjectModalProps) {
 								<Image
 									className='h-auto'
 									src={`/static/images/project/${src}`}
-									width={300}
-									height={300}
+									width={340}
+									height={380}
 									alt='image'
 								/>
 							</div>
