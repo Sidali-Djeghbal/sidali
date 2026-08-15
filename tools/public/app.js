@@ -1,154 +1,303 @@
+/* Personal command center — vanilla JS SPA.
+ * Hash router + four tools backed by the Worker's D1 API.
+ */
 (function () {
 	'use strict';
 
 	/* ================================================================
-	 * CONFIG — edit these links to point at your real services.
-	 * Groups are rendered as Homepage-style columns.
+	 * Helpers
 	 * ================================================================ */
-	var SERVICES = [
-		{
-			label: 'Notes',
-			items: [
-				{
-					name: 'Notes',
-					url: '/notes',
-					desc: 'Synced on D1',
-					icon: 'note',
-					internal: true,
-				},
-			],
-		},
-		{
-			label: 'Books',
-			items: [
-				{
-					name: 'My Bookshelf',
-					url: 'https://example.com/bookshelf',
-					desc: 'Replace with your book link',
-					icon: 'book',
-				},
-			],
-		},
-		{
-			label: 'Docs & Notes',
-			items: [
-				{
-					name: 'Docmost',
-					url: 'https://docmost.sidali-djeghbal.dev',
-					desc: 'Collaborative docs',
-					icon: 'docmost',
-				},
-				{
-					name: 'Notion',
-					url: 'https://www.notion.so',
-					desc: 'Notes & knowledge',
-					icon: 'notion',
-				},
-			],
-		},
-		{
-			label: 'Passwords',
-			items: [
-				{
-					name: 'Vaultwarden',
-					url: 'https://vaultwarden.example.com',
-					desc: 'Password manager',
-					icon: 'vaultwarden',
-				},
-			],
-		},
-		{
-			label: 'Mail',
-			items: [
-				{
-					name: 'Gmail',
-					url: 'https://mail.google.com',
-					desc: 'Inbox',
-					icon: 'gmail',
-				},
-			],
-		},
-	];
 
-	var ICONS = {
-		note: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.5Z"/><path d="M15 3v5h5"/></svg>',
-		docmost:
-			'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>',
-		notion:
-			'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6h4"/><path d="M2 10h4"/><path d="M2 14h4"/><path d="M2 18h4"/><rect width="16" height="20" x="4" y="2" rx="2"/></svg>',
-		vaultwarden:
-			'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/><path d="m21 2-9.6 9.6"/><circle cx="7.5" cy="15.5" r="5.5"/></svg>',
-		gmail:
-			'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>',
-		book: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
-		moon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>',
-		sun: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>',
+	var $ = function (sel) {
+		return document.querySelector(sel);
+	};
+
+	function esc(value) {
+		return String(value == null ? '' : value).replace(/[&<>"']/g, function (c) {
+			return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+		});
+	}
+
+	function pad(n) {
+		return String(n).padStart(2, '0');
+	}
+
+	function iso(date) {
+		return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate());
+	}
+
+	function todayStr() {
+		return iso(new Date());
+	}
+
+	function fmtDate(ts) {
+		if (!ts) return '';
+		return new Date(ts).toLocaleDateString(undefined, {
+			month: 'short',
+			day: 'numeric',
+		});
+	}
+
+	function hostOf(url) {
+		try {
+			return new URL(url).hostname.replace(/^www\./, '');
+		} catch (e) {
+			return url;
+		}
+	}
+
+	/* ================================================================
+	 * Icons (lucide-style strokes)
+	 * ================================================================ */
+
+	var I = {
+		sun: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>',
+		moon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>',
+		back: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>',
+		lock: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>',
+		plus: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>',
+		x: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>',
+		pencil: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg>',
+		trash: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>',
+		check: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>',
+		checkCircle: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/></svg>',
+		flame: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>',
+		book: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>',
+		kanban: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 5v11"/><path d="M12 5v6"/><path d="M18 5v14"/></svg>',
+		compass: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>',
+		arrow: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>',
+		chevL: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>',
+		chevR: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>',
 	};
 
 	/* ================================================================
-	 * Render service groups
+	 * State + API client
 	 * ================================================================ */
-	function renderGroups() {
-		var mount = document.getElementById('tools');
-		if (!mount) return;
 
-		SERVICES.forEach(function (group) {
-			var section = document.createElement('section');
-			section.className = 'group';
+	var state = {
+		authed: false,
+		bookmarks: [],
+		tasks: [],
+		habits: [],
+		books: [],
+		bookFilter: 'all',
+	};
 
-			var heading = document.createElement('h2');
-			heading.textContent = group.label;
-			section.appendChild(heading);
-
-			group.items.forEach(function (item) {
-				var link = document.createElement('a');
-				link.className = 'service';
-				link.href = item.url;
-				if (!item.internal) {
-					link.target = '_blank';
-					link.rel = 'noreferrer';
-				}
-				link.setAttribute('aria-label', item.name);
-
-				var icon = document.createElement('span');
-				icon.className = 'icon';
-				icon.innerHTML = ICONS[item.icon] || ICONS.book;
-
-				var text = document.createElement('span');
-				var name = document.createElement('span');
-				name.className = 'name';
-				name.textContent = item.name;
-				var desc = document.createElement('span');
-				desc.className = 'desc';
-				desc.textContent = item.desc || '';
-				text.appendChild(name);
-				text.appendChild(desc);
-
-				link.appendChild(icon);
-				link.appendChild(text);
-				section.appendChild(link);
-			});
-
-			mount.appendChild(section);
+	function api(path, opts) {
+		opts = opts || {};
+		return fetch(path, {
+			method: opts.method || 'GET',
+			headers: opts.body !== undefined ? { 'content-type': 'application/json' } : {},
+			body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
+			credentials: 'same-origin',
+		}).then(function (res) {
+			return res
+				.json()
+				.catch(function () {
+					return null;
+				})
+				.then(function (data) {
+					if (!res.ok) {
+						if (res.status === 401 && path !== '/api/login') {
+							showLogin();
+						}
+						var msg = (data && data.error) || 'Request failed (' + res.status + ')';
+						var err = new Error(msg);
+						err.status = res.status;
+						throw err;
+					}
+					return data;
+				});
 		});
 	}
 
 	/* ================================================================
-	 * Theme toggle (sun/moon + view-transition circle)
+	 * Toast + modal
 	 * ================================================================ */
-	function setupTheme() {
-		var button = document.getElementById('theme-toggle');
-		if (!button) return;
 
-		var dark = document.documentElement.classList.contains('dark');
+	var toastTimer = null;
+
+	function toast(message) {
+		var root = $('#toast-root');
+		root.innerHTML = '<div class="toast">' + esc(message) + '</div>';
+		clearTimeout(toastTimer);
+		toastTimer = setTimeout(function () {
+			root.innerHTML = '';
+		}, 2600);
+	}
+
+	function fail(err) {
+		toast(err && err.message ? err.message : 'Something went wrong');
+	}
+
+	function escClose(e) {
+		if (e.key === 'Escape') closeModal();
+	}
+
+	function openModal(title, bodyHtml) {
+		var root = $('#modal-root');
+		root.innerHTML =
+			'<div class="modal-overlay">' +
+			'<div class="modal" role="dialog" aria-modal="true" aria-label="' + esc(title) + '">' +
+			'<div class="modal-head"><h3 class="modal-title">' + esc(title) + '</h3>' +
+			'<button class="icon-btn" type="button" data-close aria-label="Close">' + I.x + '</button></div>' +
+			'<div class="modal-body">' + bodyHtml + '</div>' +
+			'</div></div>';
+		var overlay = root.querySelector('.modal-overlay');
+		overlay.addEventListener('click', function (e) {
+			if (e.target === overlay) closeModal();
+		});
+		overlay.querySelector('[data-close]').addEventListener('click', closeModal);
+		document.addEventListener('keydown', escClose);
+		var first = overlay.querySelector('input, textarea, select');
+		if (first) first.focus();
+		return overlay;
+	}
+
+	function closeModal() {
+		$('#modal-root').innerHTML = '';
+		document.removeEventListener('keydown', escClose);
+	}
+
+	// Two-step confirm for destructive icon buttons: first click arms,
+	// second click within the window confirms.
+	function armDelete(btn, onConfirm) {
+		if (btn.dataset.armed) {
+			onConfirm();
+			return;
+		}
+		btn.dataset.armed = '1';
+		btn.classList.add('danger-armed');
+		btn.innerHTML = I.check;
+		btn.setAttribute('aria-label', 'Confirm delete');
+		btn.title = 'Click again to confirm';
+		setTimeout(function () {
+			if (!btn.isConnected) return;
+			delete btn.dataset.armed;
+			btn.classList.remove('danger-armed');
+			btn.innerHTML = I.trash;
+			btn.setAttribute('aria-label', 'Delete');
+			btn.title = 'Delete';
+		}, 2600);
+	}
+
+	/* ================================================================
+	 * Drag & drop (shared by bookmarks grid and kanban board)
+	 * ================================================================ */
+
+	function pointerAfter(e, rect) {
+		if (e.clientY >= rect.bottom) return true;
+		if (e.clientY <= rect.top) return false;
+		return e.clientX > rect.left + rect.width / 2;
+	}
+
+	function enableDrag(scope, getPayload, handleDrop) {
+		var placeholder = document.createElement('div');
+		placeholder.className = 'drop-placeholder';
+		var payload = null;
+
+		scope.addEventListener('dragstart', function (e) {
+			var item = e.target.closest('[draggable]');
+			if (!item) return;
+			payload = getPayload(item);
+			try {
+				e.dataTransfer.setData('text/plain', '');
+			} catch (err) {}
+			e.dataTransfer.effectAllowed = 'move';
+			item.classList.add('dragging');
+			requestAnimationFrame(function () {
+				item.parentNode.insertBefore(placeholder, item.nextSibling);
+			});
+		});
+
+		scope.addEventListener('dragend', function () {
+			placeholder.remove();
+			var dragging = scope.querySelector('.dragging');
+			if (dragging) dragging.classList.remove('dragging');
+			scope.querySelectorAll('.drop-in').forEach(function (el) {
+				el.classList.remove('drop-in');
+			});
+			payload = null;
+		});
+
+		scope.addEventListener('dragover', function (e) {
+			if (payload === null) return;
+			e.preventDefault();
+			e.dataTransfer.dropEffect = 'move';
+			var item = e.target.closest('[draggable]');
+			if (item) {
+				var after = pointerAfter(e, item.getBoundingClientRect());
+				item.parentNode.insertBefore(placeholder, after ? item.nextSibling : item);
+			} else {
+				var list = e.target.closest('.drop-list');
+				if (list) list.appendChild(placeholder);
+			}
+			var zone = placeholder.closest('.drop-zone');
+			scope.querySelectorAll('.drop-zone').forEach(function (el) {
+				el.classList.toggle('drop-in', el === zone);
+			});
+		});
+
+		scope.addEventListener('drop', function (e) {
+			if (payload === null) return;
+			e.preventDefault();
+			var next = placeholder.nextElementSibling;
+			while (next && !next.matches('[draggable]')) next = next.nextElementSibling;
+			var list = placeholder.closest('.drop-list');
+			var beforeId = next ? next.dataset.id : null;
+			placeholder.remove();
+			var dragging = scope.querySelector('.dragging');
+			if (dragging) dragging.classList.remove('dragging');
+			scope.querySelectorAll('.drop-in').forEach(function (el) {
+				el.classList.remove('drop-in');
+			});
+			if (list) handleDrop(payload, list, beforeId);
+			payload = null;
+		});
+	}
+
+	// Fractional position between neighbours for drag/move reordering.
+	function positionBetween(list, id, beforeId) {
+		var others = list.filter(function (item) {
+			return item.id !== id;
+		});
+		var idx = others.length;
+		if (beforeId) {
+			var found = -1;
+			for (var i = 0; i < others.length; i++) {
+				if (others[i].id === beforeId) {
+					found = i;
+					break;
+				}
+			}
+			if (found !== -1) idx = found;
+		}
+		var prev = idx > 0 ? others[idx - 1].position : null;
+		var next = idx < others.length ? others[idx].position : null;
+		if (prev === null && next === null) return 1;
+		if (prev === null) return next - 1;
+		if (next === null) return prev + 1;
+		return (prev + next) / 2;
+	}
+
+	/* ================================================================
+	 * Theme
+	 * ================================================================ */
+
+	function setupTheme() {
+		var button = $('#theme-toggle');
+		var logoutBtn = $('#logout-btn');
+		var backBtn = $('#back-btn');
+		logoutBtn.innerHTML = I.lock;
+		backBtn.innerHTML = I.back;
 
 		function paint() {
-			dark = document.documentElement.classList.contains('dark');
-			button.innerHTML = dark ? ICONS.sun : ICONS.moon;
+			var dark = document.documentElement.classList.contains('dark');
+			button.innerHTML = dark ? I.sun : I.moon;
 		}
 
 		button.addEventListener('click', function () {
-			var next = !dark;
+			var next = !document.documentElement.classList.contains('dark');
 			var apply = function () {
 				document.documentElement.classList.toggle('dark', next);
 				try {
@@ -167,1204 +316,861 @@
 	}
 
 	/* ================================================================
-	 * Splash cursor — fluid WebGL trail (ported from portfolio)
+	 * Auth
 	 * ================================================================ */
-	function initSplash() {
-		var container = document.getElementById('splash');
-		if (!container) return;
 
-		var canvas = document.createElement('canvas');
-		container.insertBefore(canvas, container.firstChild);
-
-		var isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
-		if (
-			window.matchMedia('(prefers-reduced-motion: reduce)').matches &&
-			!isTouchDevice
-		) {
-			return;
-		}
-		var isMobile = window.innerWidth < 768;
-
-		function Pointer() {
-			this.id = -1;
-			this.texcoordX = 0;
-			this.texcoordY = 0;
-			this.prevTexcoordX = 0;
-			this.prevTexcoordY = 0;
-			this.deltaX = 0;
-			this.deltaY = 0;
-			this.down = false;
-			this.moved = false;
-			this.color = { r: 0, g: 0, b: 0 };
-		}
-
-		var config = {
-			SIM_RESOLUTION: isMobile ? 96 : 128,
-			DYE_RESOLUTION: isMobile ? 512 : 800,
-			CAPTURE_RESOLUTION: isMobile ? 256 : 512,
-			DENSITY_DISSIPATION: 3.5,
-			VELOCITY_DISSIPATION: 2,
-			PRESSURE: 0.1,
-			PRESSURE_ITERATIONS: 20,
-			CURL: 3,
-			SPLAT_RADIUS: 0.2,
-			SPLAT_FORCE: 6000,
-			SHADING: true,
-			COLOR_UPDATE_SPEED: 10,
-			PAUSED: false,
-			BACK_COLOR: { r: 0, g: 0, b: 0 },
-			TRANSPARENT: true,
-		};
-
-		var pointers = [new Pointer()];
-
-		var glState = getWebGLContext(canvas);
-		var gl = glState.gl;
-		var ext = glState.ext;
-		if (!ext.supportLinearFiltering) {
-			config.DYE_RESOLUTION = 256;
-			config.SHADING = false;
-		}
-
-		function getWebGLContext(canvas) {
-			var params = {
-				alpha: true,
-				depth: false,
-				stencil: false,
-				antialias: false,
-				preserveDrawingBuffer: false,
-			};
-			var gl =
-				canvas.getContext('webgl2', params) ||
-				canvas.getContext('webgl', params) ||
-				canvas.getContext('experimental-webgl', params);
-			if (!gl) throw new Error('WebGL not supported');
-			var isWebGL2 = typeof WebGL2RenderingContext !== 'undefined' &&
-				gl instanceof WebGL2RenderingContext;
-
-			var halfFloat = null;
-			var supportLinearFiltering = null;
-			if (isWebGL2) {
-				gl.getExtension('EXT_color_buffer_float');
-				supportLinearFiltering = gl.getExtension('OES_texture_float_linear');
-			} else {
-				halfFloat = gl.getExtension('OES_texture_half_float');
-				supportLinearFiltering = gl.getExtension(
-					'OES_texture_half_float_linear',
-				);
-			}
-			gl.clearColor(0.0, 0.0, 0.0, 1.0);
-
-			var halfFloatTexType = isWebGL2 ? gl.HALF_FLOAT : (halfFloat && halfFloat.HALF_FLOAT_OES) || gl.UNSIGNED_BYTE;
-			var formatRGBA;
-			var formatRG;
-			var formatR;
-
-			if (isWebGL2) {
-				formatRGBA = getSupportedFormat(gl, gl.RGBA16F, gl.RGBA, halfFloatTexType);
-				formatRG = getSupportedFormat(gl, gl.RG16F, gl.RG, halfFloatTexType);
-				formatR = getSupportedFormat(gl, gl.R16F, gl.RED, halfFloatTexType);
-			} else {
-				formatRGBA = getSupportedFormat(gl, gl.RGBA, gl.RGBA, halfFloatTexType);
-				formatRG = getSupportedFormat(gl, gl.RGBA, gl.RGBA, halfFloatTexType);
-				formatR = getSupportedFormat(gl, gl.RGBA, gl.RGBA, halfFloatTexType);
-			}
-
-			return {
-				gl: gl,
-				ext: {
-					formatRGBA: formatRGBA,
-					formatRG: formatRG,
-					formatR: formatR,
-					halfFloatTexType: halfFloatTexType,
-					supportLinearFiltering: supportLinearFiltering,
-				},
-			};
-		}
-
-		function getSupportedFormat(gl, internalFormat, format, type) {
-			if (!supportRenderTextureFormat(gl, internalFormat, format, type)) {
-				switch (internalFormat) {
-					case gl.R16F:
-						return getSupportedFormat(gl, gl.RG16F, gl.RG, type);
-					case gl.RG16F:
-						return getSupportedFormat(gl, gl.RGBA16F, gl.RGBA, type);
-					default:
-						return null;
-				}
-			}
-			return { internalFormat: internalFormat, format: format };
-		}
-
-		function supportRenderTextureFormat(gl, internalFormat, format, type) {
-			var texture = gl.createTexture();
-			gl.bindTexture(gl.TEXTURE_2D, texture);
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-			gl.texImage2D(gl.TEXTURE_2D, 0, internalFormat, 4, 4, 0, format, type, null);
-			var fbo = gl.createFramebuffer();
-			gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
-			gl.framebufferTexture2D(
-				gl.FRAMEBUFFER,
-				gl.COLOR_ATTACHMENT0,
-				gl.TEXTURE_2D,
-				texture,
-				0,
-			);
-			var status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
-			return status === gl.FRAMEBUFFER_COMPLETE;
-		}
-
-		function Material(vertexShader, fragmentShaderSource) {
-			this.vertexShader = vertexShader;
-			this.fragmentShaderSource = fragmentShaderSource;
-			this.programs = {};
-			this.activeProgram = null;
-			this.uniforms = {};
-		}
-		Material.prototype.setKeywords = function (keywords) {
-			var hash = 0;
-			for (var i = 0; i < keywords.length; i++) hash += hashCode(keywords[i]);
-			var program = this.programs[hash];
-			if (program == null) {
-				var fragmentShader = compileShader(
-					gl.FRAGMENT_SHADER,
-					this.fragmentShaderSource,
-					keywords,
-				);
-				program = createProgram(this.vertexShader, fragmentShader);
-				this.programs[hash] = program;
-			}
-			if (program === this.activeProgram) return;
-			this.uniforms = getUniforms(program);
-			this.activeProgram = program;
-		};
-		Material.prototype.bind = function () {
-			gl.useProgram(this.activeProgram);
-		};
-
-		function Program(vertexShader, fragmentShader) {
-			this.program = createProgram(vertexShader, fragmentShader);
-			this.uniforms = getUniforms(this.program);
-		}
-		Program.prototype.bind = function () {
-			gl.useProgram(this.program);
-		};
-
-		function createProgram(vertexShader, fragmentShader) {
-			var program = gl.createProgram();
-			gl.attachShader(program, vertexShader);
-			gl.attachShader(program, fragmentShader);
-			gl.linkProgram(program);
-			if (!gl.getProgramParameter(program, gl.LINK_STATUS))
-				console.trace(gl.getProgramInfoLog(program));
-			return program;
-		}
-
-		function getUniforms(program) {
-			var uniforms = {};
-			var uniformCount = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS);
-			for (var i = 0; i < uniformCount; i++) {
-				var uniformName = gl.getActiveUniform(program, i).name;
-				uniforms[uniformName] = gl.getUniformLocation(program, uniformName);
-			}
-			return uniforms;
-		}
-
-		function compileShader(type, source, keywords) {
-			source = addKeywords(source, keywords);
-			var shader = gl.createShader(type);
-			gl.shaderSource(shader, source);
-			gl.compileShader(shader);
-			if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS))
-				console.trace(gl.getShaderInfoLog(shader));
-			return shader;
-		}
-
-		function addKeywords(source, keywords) {
-			if (!keywords) return source;
-			var keywordsString = '';
-			keywords.forEach(function (keyword) {
-				keywordsString += '#define ' + keyword + '\n';
-			});
-			return keywordsString + source;
-		}
-
-		var baseVertexShader = compileShader(
-			gl.VERTEX_SHADER,
-			[
-				'precision highp float;',
-				'attribute vec2 aPosition;',
-				'varying vec2 vUv;',
-				'varying vec2 vL;',
-				'varying vec2 vR;',
-				'varying vec2 vT;',
-				'varying vec2 vB;',
-				'uniform vec2 texelSize;',
-				'',
-				'void main () {',
-				'    vUv = aPosition * 0.5 + 0.5;',
-				'    vL = vUv - vec2(texelSize.x, 0.0);',
-				'    vR = vUv + vec2(texelSize.x, 0.0);',
-				'    vT = vUv + vec2(0.0, texelSize.y);',
-				'    vB = vUv - vec2(0.0, texelSize.y);',
-				'    gl_Position = vec4(aPosition, 0.0, 1.0);',
-				'}',
-			].join('\n'),
-		);
-
-		var copyShader = compileShader(
-			gl.FRAGMENT_SHADER,
-			[
-				'precision mediump float;',
-				'precision mediump sampler2D;',
-				'varying highp vec2 vUv;',
-				'uniform sampler2D uTexture;',
-				'',
-				'void main () {',
-				'    gl_FragColor = texture2D(uTexture, vUv);',
-				'}',
-			].join('\n'),
-		);
-
-		var clearShader = compileShader(
-			gl.FRAGMENT_SHADER,
-			[
-				'precision mediump float;',
-				'precision mediump sampler2D;',
-				'varying highp vec2 vUv;',
-				'uniform sampler2D uTexture;',
-				'uniform float value;',
-				'',
-				'void main () {',
-				'    gl_FragColor = value * texture2D(uTexture, vUv);',
-				'}',
-			].join('\n'),
-		);
-
-		var displayShaderSource = [
-			'precision highp float;',
-			'precision highp sampler2D;',
-			'varying vec2 vUv;',
-			'varying vec2 vL;',
-			'varying vec2 vR;',
-			'varying vec2 vT;',
-			'varying vec2 vB;',
-			'uniform sampler2D uTexture;',
-			'uniform sampler2D uDithering;',
-			'uniform vec2 ditherScale;',
-			'uniform vec2 texelSize;',
-			'uniform float uLightMode;',
-			'',
-			'vec3 linearToGamma (vec3 color) {',
-			'    color = max(color, vec3(0));',
-			'    return max(1.055 * pow(color, vec3(0.416666667)) - 0.055, vec3(0));',
-			'}',
-			'',
-			'void main () {',
-			'    vec3 c = texture2D(uTexture, vUv).rgb;',
-			'    #ifdef SHADING',
-			'        vec3 lc = texture2D(uTexture, vL).rgb;',
-			'        vec3 rc = texture2D(uTexture, vR).rgb;',
-			'        vec3 tc = texture2D(uTexture, vT).rgb;',
-			'        vec3 bc = texture2D(uTexture, vB).rgb;',
-			'',
-			'        float dx = length(rc) - length(lc);',
-			'        float dy = length(tc) - length(bc);',
-			'',
-			'        vec3 n = normalize(vec3(dx, dy, length(texelSize)));',
-			'        vec3 l = vec3(0.0, 0.0, 1.0);',
-			'',
-			'        float diffuse = clamp(dot(n, l) + 0.7, 0.7, 1.0);',
-			'        c *= diffuse;',
-			'    #endif',
-			'',
-			'    float a = max(c.r, max(c.g, c.b));',
-			'    vec3 dyeColor = mix(vec3(1.0), vec3(0.0), uLightMode);',
-			'    gl_FragColor = vec4(dyeColor * a, a);',
-			'}',
-		].join('\n');
-
-		var splatShader = compileShader(
-			gl.FRAGMENT_SHADER,
-			[
-				'precision highp float;',
-				'precision highp sampler2D;',
-				'varying vec2 vUv;',
-				'uniform sampler2D uTarget;',
-				'uniform float aspectRatio;',
-				'uniform vec3 color;',
-				'uniform vec2 point;',
-				'uniform float radius;',
-				'',
-				'void main () {',
-				'    vec2 p = vUv - point.xy;',
-				'    p.x *= aspectRatio;',
-				'    vec3 splat = exp(-dot(p, p) / radius) * color;',
-				'    vec3 base = texture2D(uTarget, vUv).xyz;',
-				'    gl_FragColor = vec4(base + splat, 1.0);',
-				'}',
-			].join('\n'),
-		);
-
-		var advectionShader = compileShader(
-			gl.FRAGMENT_SHADER,
-			[
-				'precision highp float;',
-				'precision highp sampler2D;',
-				'varying vec2 vUv;',
-				'uniform sampler2D uVelocity;',
-				'uniform sampler2D uSource;',
-				'uniform vec2 texelSize;',
-				'uniform vec2 dyeTexelSize;',
-				'uniform float dt;',
-				'uniform float dissipation;',
-				'',
-				'vec4 bilerp (sampler2D sam, vec2 uv, vec2 tsize) {',
-				'    vec2 st = uv / tsize - 0.5;',
-				'    vec2 iuv = floor(st);',
-				'    vec2 fuv = fract(st);',
-				'',
-				'    vec4 a = texture2D(sam, (iuv + vec2(0.5, 0.5)) * tsize);',
-				'    vec4 b = texture2D(sam, (iuv + vec2(1.5, 0.5)) * tsize);',
-				'    vec4 c = texture2D(sam, (iuv + vec2(0.5, 1.5)) * tsize);',
-				'    vec4 d = texture2D(sam, (iuv + vec2(1.5, 1.5)) * tsize);',
-				'',
-				'    return mix(mix(a, b, fuv.x), mix(c, d, fuv.x), fuv.y);',
-				'}',
-				'',
-				'void main () {',
-				'    #ifdef MANUAL_FILTERING',
-				'        vec2 coord = vUv - dt * bilerp(uVelocity, vUv, texelSize).xy * texelSize;',
-				'        vec4 result = bilerp(uSource, coord, dyeTexelSize);',
-				'    #else',
-				'        vec2 coord = vUv - dt * texture2D(uVelocity, vUv).xy * texelSize;',
-				'        vec4 result = texture2D(uSource, coord);',
-				'    #endif',
-				'    float decay = 1.0 + dissipation * dt;',
-				'    gl_FragColor = result / decay;',
-				'}',
-			].join('\n'),
-			ext.supportLinearFiltering ? null : ['MANUAL_FILTERING'],
-		);
-
-		var divergenceShader = compileShader(
-			gl.FRAGMENT_SHADER,
-			[
-				'precision mediump float;',
-				'precision mediump sampler2D;',
-				'varying highp vec2 vUv;',
-				'varying highp vec2 vL;',
-				'varying highp vec2 vR;',
-				'varying highp vec2 vT;',
-				'varying highp vec2 vB;',
-				'uniform sampler2D uVelocity;',
-				'',
-				'void main () {',
-				'    float L = texture2D(uVelocity, vL).x;',
-				'    float R = texture2D(uVelocity, vR).x;',
-				'    float T = texture2D(uVelocity, vT).y;',
-				'    float B = texture2D(uVelocity, vB).y;',
-				'',
-				'    vec2 C = texture2D(uVelocity, vUv).xy;',
-				'    if (vL.x < 0.0) { L = -C.x; }',
-				'    if (vR.x > 1.0) { R = -C.x; }',
-				'    if (vT.y > 1.0) { T = -C.y; }',
-				'    if (vB.y < 0.0) { B = -C.y; }',
-				'',
-				'    float div = 0.5 * (R - L + T - B);',
-				'    gl_FragColor = vec4(div, 0.0, 0.0, 1.0);',
-				'}',
-			].join('\n'),
-		);
-
-		var curlShader = compileShader(
-			gl.FRAGMENT_SHADER,
-			[
-				'precision mediump float;',
-				'precision mediump sampler2D;',
-				'varying highp vec2 vUv;',
-				'varying highp vec2 vL;',
-				'varying highp vec2 vR;',
-				'varying highp vec2 vT;',
-				'varying highp vec2 vB;',
-				'uniform sampler2D uVelocity;',
-				'',
-				'void main () {',
-				'    float L = texture2D(uVelocity, vL).y;',
-				'    float R = texture2D(uVelocity, vR).y;',
-				'    float T = texture2D(uVelocity, vT).x;',
-				'    float B = texture2D(uVelocity, vB).x;',
-				'    float vorticity = R - L - T + B;',
-				'    gl_FragColor = vec4(0.5 * vorticity, 0.0, 0.0, 1.0);',
-				'}',
-			].join('\n'),
-		);
-
-		var vorticityShader = compileShader(
-			gl.FRAGMENT_SHADER,
-			[
-				'precision highp float;',
-				'precision highp sampler2D;',
-				'varying vec2 vUv;',
-				'varying vec2 vL;',
-				'varying vec2 vR;',
-				'varying vec2 vT;',
-				'varying vec2 vB;',
-				'uniform sampler2D uVelocity;',
-				'uniform sampler2D uCurl;',
-				'uniform float curl;',
-				'uniform float dt;',
-				'',
-				'void main () {',
-				'    float L = texture2D(uCurl, vL).x;',
-				'    float R = texture2D(uCurl, vR).x;',
-				'    float T = texture2D(uCurl, vT).x;',
-				'    float B = texture2D(uCurl, vB).x;',
-				'    float C = texture2D(uCurl, vUv).x;',
-				'',
-				'    vec2 force = 0.5 * vec2(abs(T) - abs(B), abs(R) - abs(L));',
-				'    force /= length(force) + 0.0001;',
-				'    force *= curl * C;',
-				'    force.y *= -1.0;',
-				'',
-				'    vec2 velocity = texture2D(uVelocity, vUv).xy;',
-				'    velocity += force * dt;',
-				'    velocity = min(max(velocity, -1000.0), 1000.0);',
-				'    gl_FragColor = vec4(velocity, 0.0, 1.0);',
-				'}',
-			].join('\n'),
-		);
-
-		var pressureShader = compileShader(
-			gl.FRAGMENT_SHADER,
-			[
-				'precision mediump float;',
-				'precision mediump sampler2D;',
-				'varying highp vec2 vUv;',
-				'varying highp vec2 vL;',
-				'varying highp vec2 vR;',
-				'varying highp vec2 vT;',
-				'varying highp vec2 vB;',
-				'uniform sampler2D uPressure;',
-				'uniform sampler2D uDivergence;',
-				'',
-				'void main () {',
-				'    float L = texture2D(uPressure, vL).x;',
-				'    float R = texture2D(uPressure, vR).x;',
-				'    float T = texture2D(uPressure, vT).x;',
-				'    float B = texture2D(uPressure, vB).x;',
-				'    float C = texture2D(uPressure, vUv).x;',
-				'    float divergence = texture2D(uDivergence, vUv).x;',
-				'    float pressure = (L + R + B + T - divergence) * 0.25;',
-				'    gl_FragColor = vec4(pressure, 0.0, 0.0, 1.0);',
-				'}',
-			].join('\n'),
-		);
-
-		var gradientSubtractShader = compileShader(
-			gl.FRAGMENT_SHADER,
-			[
-				'precision mediump float;',
-				'precision mediump sampler2D;',
-				'varying highp vec2 vUv;',
-				'varying highp vec2 vL;',
-				'varying highp vec2 vR;',
-				'varying highp vec2 vT;',
-				'varying highp vec2 vB;',
-				'uniform sampler2D uPressure;',
-				'uniform sampler2D uVelocity;',
-				'',
-				'void main () {',
-				'    float L = texture2D(uPressure, vL).x;',
-				'    float R = texture2D(uPressure, vR).x;',
-				'    float T = texture2D(uPressure, vT).x;',
-				'    float B = texture2D(uPressure, vB).x;',
-				'    vec2 velocity = texture2D(uVelocity, vUv).xy;',
-				'    velocity.xy -= vec2(R - L, T - B);',
-				'    gl_FragColor = vec4(velocity, 0.0, 1.0);',
-				'}',
-			].join('\n'),
-		);
-
-		var blit = (function () {
-			gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
-			gl.bufferData(
-				gl.ARRAY_BUFFER,
-				new Float32Array([-1, -1, -1, 1, 1, 1, 1, -1]),
-				gl.STATIC_DRAW,
-			);
-			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, gl.createBuffer());
-			gl.bufferData(
-				gl.ELEMENT_ARRAY_BUFFER,
-				new Uint16Array([0, 1, 2, 0, 2, 3]),
-				gl.STATIC_DRAW,
-			);
-			gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
-			gl.enableVertexAttribArray(0);
-			return function (target, clear) {
-				if (target == null) {
-					gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
-					gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-				} else {
-					gl.viewport(0, 0, target.width, target.height);
-					gl.bindFramebuffer(gl.FRAMEBUFFER, target.fbo);
-				}
-				if (clear) {
-					gl.clearColor(0.0, 0.0, 0.0, 1.0);
-					gl.clear(gl.COLOR_BUFFER_BIT);
-				}
-				gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
-			};
-		})();
-
-		var dye;
-		var velocity;
-		var divergence;
-		var curl;
-		var pressure;
-
-		var copyProgram = new Program(baseVertexShader, copyShader);
-		var clearProgram = new Program(baseVertexShader, clearShader);
-		var splatProgram = new Program(baseVertexShader, splatShader);
-		var advectionProgram = new Program(baseVertexShader, advectionShader);
-		var divergenceProgram = new Program(baseVertexShader, divergenceShader);
-		var curlProgram = new Program(baseVertexShader, curlShader);
-		var vorticityProgram = new Program(baseVertexShader, vorticityShader);
-		var pressureProgram = new Program(baseVertexShader, pressureShader);
-		var gradientSubtractProgram = new Program(
-			baseVertexShader,
-			gradientSubtractShader,
-		);
-		var displayMaterial = new Material(baseVertexShader, displayShaderSource);
-
-		function initFramebuffers() {
-			var simRes = getResolution(config.SIM_RESOLUTION);
-			var dyeRes = getResolution(config.DYE_RESOLUTION);
-			var texType = ext.halfFloatTexType;
-			var rgba = ext.formatRGBA;
-			var rg = ext.formatRG;
-			var r = ext.formatR;
-			var filtering = ext.supportLinearFiltering ? gl.LINEAR : gl.NEAREST;
-			gl.disable(gl.BLEND);
-
-			if (!rgba || !rg || !r) {
-				console.error('Required texture formats not supported');
-				return;
-			}
-
-			if (!dye)
-				dye = createDoubleFBO(
-					dyeRes.width,
-					dyeRes.height,
-					rgba.internalFormat,
-					rgba.format,
-					texType,
-					filtering,
-				);
-			else
-				dye = resizeDoubleFBO(
-					dye,
-					dyeRes.width,
-					dyeRes.height,
-					rgba.internalFormat,
-					rgba.format,
-					texType,
-					filtering,
-				);
-
-			if (!velocity)
-				velocity = createDoubleFBO(
-					simRes.width,
-					simRes.height,
-					rg.internalFormat,
-					rg.format,
-					texType,
-					filtering,
-				);
-			else
-				velocity = resizeDoubleFBO(
-					velocity,
-					simRes.width,
-					simRes.height,
-					rg.internalFormat,
-					rg.format,
-					texType,
-					filtering,
-				);
-
-			divergence = createFBO(
-				simRes.width,
-				simRes.height,
-				r.internalFormat,
-				r.format,
-				texType,
-				gl.NEAREST,
-			);
-			curl = createFBO(
-				simRes.width,
-				simRes.height,
-				r.internalFormat,
-				r.format,
-				texType,
-				gl.NEAREST,
-			);
-			pressure = createDoubleFBO(
-				simRes.width,
-				simRes.height,
-				r.internalFormat,
-				r.format,
-				texType,
-				gl.NEAREST,
-			);
-		}
-
-		function createFBO(w, h, internalFormat, format, type, param) {
-			gl.activeTexture(gl.TEXTURE0);
-			var texture = gl.createTexture();
-			gl.bindTexture(gl.TEXTURE_2D, texture);
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, param);
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, param);
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-			gl.texImage2D(gl.TEXTURE_2D, 0, internalFormat, w, h, 0, format, type, null);
-
-			var fbo = gl.createFramebuffer();
-			gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
-			gl.framebufferTexture2D(
-				gl.FRAMEBUFFER,
-				gl.COLOR_ATTACHMENT0,
-				gl.TEXTURE_2D,
-				texture,
-				0,
-			);
-			gl.viewport(0, 0, w, h);
-			gl.clear(gl.COLOR_BUFFER_BIT);
-
-			var texelSizeX = 1.0 / w;
-			var texelSizeY = 1.0 / h;
-			return {
-				texture: texture,
-				fbo: fbo,
-				width: w,
-				height: h,
-				texelSizeX: texelSizeX,
-				texelSizeY: texelSizeY,
-				attach: function (id) {
-					gl.activeTexture(gl.TEXTURE0 + id);
-					gl.bindTexture(gl.TEXTURE_2D, texture);
-					return id;
-				},
-			};
-		}
-
-		function createDoubleFBO(w, h, internalFormat, format, type, param) {
-			var fbo1 = createFBO(w, h, internalFormat, format, type, param);
-			var fbo2 = createFBO(w, h, internalFormat, format, type, param);
-			return {
-				width: w,
-				height: h,
-				texelSizeX: fbo1.texelSizeX,
-				texelSizeY: fbo1.texelSizeY,
-				get read() {
-					return fbo1;
-				},
-				set read(value) {
-					fbo1 = value;
-				},
-				get write() {
-					return fbo2;
-				},
-				set write(value) {
-					fbo2 = value;
-				},
-				swap: function () {
-					var temp = fbo1;
-					fbo1 = fbo2;
-					fbo2 = temp;
-				},
-			};
-		}
-
-		function resizeFBO(target, w, h, internalFormat, format, type, param) {
-			var newFBO = createFBO(w, h, internalFormat, format, type, param);
-			copyProgram.bind();
-			gl.uniform1i(copyProgram.uniforms.uTexture, target.attach(0));
-			blit(newFBO);
-			return newFBO;
-		}
-
-		function resizeDoubleFBO(target, w, h, internalFormat, format, type, param) {
-			if (target.width === w && target.height === h) return target;
-			target.read = resizeFBO(
-				target.read,
-				w,
-				h,
-				internalFormat,
-				format,
-				type,
-				param,
-			);
-			target.write = createFBO(w, h, internalFormat, format, type, param);
-			target.width = w;
-			target.height = h;
-			target.texelSizeX = 1.0 / w;
-			target.texelSizeY = 1.0 / h;
-			return target;
-		}
-
-		function updateKeywords() {
-			var displayKeywords = [];
-			if (config.SHADING) displayKeywords.push('SHADING');
-			displayMaterial.setKeywords(displayKeywords);
-		}
-
-		updateKeywords();
-		initFramebuffers();
-		var lastUpdateTime = Date.now();
-		var colorUpdateTimer = 0.0;
-
-		var IDLE_TIMEOUT = isTouchDevice ? Number.POSITIVE_INFINITY : 3000;
-
-		function updateFrame() {
-			if (!running) return;
-			if (Date.now() - lastActivity > IDLE_TIMEOUT) {
-				stop();
-				return;
-			}
-			var dt = calcDeltaTime();
-			if (resizeCanvas()) initFramebuffers();
-			updateColors(dt);
-			applyInputs();
-			step(dt);
-			render(null);
-			rafId = requestAnimationFrame(updateFrame);
-		}
-
-		var rafId = 0;
-		var running = false;
-		var lastActivity = Date.now();
-
-		function start() {
-			if (running) return;
-			running = true;
-			lastActivity = Date.now();
-			rafId = requestAnimationFrame(updateFrame);
-		}
-
-		function stop() {
-			running = false;
-			cancelAnimationFrame(rafId);
-		}
-
-		function markActivity() {
-			lastActivity = Date.now();
-			if (!running) start();
-		}
-
-		function calcDeltaTime() {
-			var now = Date.now();
-			var dt = (now - lastUpdateTime) / 1000;
-			dt = Math.min(dt, 0.016666);
-			lastUpdateTime = now;
-			return dt;
-		}
-
-		function resizeCanvas() {
-			var width = scaleByPixelRatio(canvas.clientWidth);
-			var height = scaleByPixelRatio(canvas.clientHeight);
-			if (canvas.width !== width || canvas.height !== height) {
-				canvas.width = width;
-				canvas.height = height;
-				return true;
-			}
-			return false;
-		}
-
-		function updateColors(dt) {
-			colorUpdateTimer += dt * config.COLOR_UPDATE_SPEED;
-			if (colorUpdateTimer >= 1) {
-				colorUpdateTimer = wrap(colorUpdateTimer, 0, 1);
-				pointers.forEach(function (p) {
-					p.color = generateColor();
-				});
-			}
-		}
-
-		function applyInputs() {
-			pointers.forEach(function (p) {
-				if (p.moved) {
-					p.moved = false;
-					splatPointer(p);
-				}
-			});
-		}
-
-		function step(dt) {
-			gl.disable(gl.BLEND);
-			curlProgram.bind();
-			gl.uniform2f(
-				curlProgram.uniforms.texelSize,
-				velocity.texelSizeX,
-				velocity.texelSizeY,
-			);
-			gl.uniform1i(curlProgram.uniforms.uVelocity, velocity.read.attach(0));
-			blit(curl);
-
-			vorticityProgram.bind();
-			gl.uniform2f(
-				vorticityProgram.uniforms.texelSize,
-				velocity.texelSizeX,
-				velocity.texelSizeY,
-			);
-			gl.uniform1i(
-				vorticityProgram.uniforms.uVelocity,
-				velocity.read.attach(0),
-			);
-			gl.uniform1i(vorticityProgram.uniforms.uCurl, curl.attach(1));
-			gl.uniform1f(vorticityProgram.uniforms.curl, config.CURL);
-			gl.uniform1f(vorticityProgram.uniforms.dt, dt);
-			blit(velocity.write);
-			velocity.swap();
-
-			divergenceProgram.bind();
-			gl.uniform2f(
-				divergenceProgram.uniforms.texelSize,
-				velocity.texelSizeX,
-				velocity.texelSizeY,
-			);
-			gl.uniform1i(
-				divergenceProgram.uniforms.uVelocity,
-				velocity.read.attach(0),
-			);
-			blit(divergence);
-
-			clearProgram.bind();
-			gl.uniform1i(clearProgram.uniforms.uTexture, pressure.read.attach(0));
-			gl.uniform1f(clearProgram.uniforms.value, config.PRESSURE);
-			blit(pressure.write);
-			pressure.swap();
-
-			pressureProgram.bind();
-			gl.uniform2f(
-				pressureProgram.uniforms.texelSize,
-				velocity.texelSizeX,
-				velocity.texelSizeY,
-			);
-			gl.uniform1i(pressureProgram.uniforms.uDivergence, divergence.attach(0));
-			for (var i = 0; i < config.PRESSURE_ITERATIONS; i++) {
-				gl.uniform1i(
-					pressureProgram.uniforms.uPressure,
-					pressure.read.attach(1),
-				);
-				blit(pressure.write);
-				pressure.swap();
-			}
-
-			gradientSubtractProgram.bind();
-			gl.uniform2f(
-				gradientSubtractProgram.uniforms.texelSize,
-				velocity.texelSizeX,
-				velocity.texelSizeY,
-			);
-			gl.uniform1i(
-				gradientSubtractProgram.uniforms.uPressure,
-				pressure.read.attach(0),
-			);
-			gl.uniform1i(
-				gradientSubtractProgram.uniforms.uVelocity,
-				velocity.read.attach(1),
-			);
-			blit(velocity.write);
-			velocity.swap();
-
-			advectionProgram.bind();
-			gl.uniform2f(
-				advectionProgram.uniforms.texelSize,
-				velocity.texelSizeX,
-				velocity.texelSizeY,
-			);
-			if (!ext.supportLinearFiltering)
-				gl.uniform2f(
-					advectionProgram.uniforms.dyeTexelSize,
-					velocity.texelSizeX,
-					velocity.texelSizeY,
-				);
-			var velocityId = velocity.read.attach(0);
-			gl.uniform1i(advectionProgram.uniforms.uVelocity, velocityId);
-			gl.uniform1i(advectionProgram.uniforms.uSource, velocityId);
-			gl.uniform1f(advectionProgram.uniforms.dt, dt);
-			gl.uniform1f(
-				advectionProgram.uniforms.dissipation,
-				config.VELOCITY_DISSIPATION,
-			);
-			blit(velocity.write);
-			velocity.swap();
-
-			if (!ext.supportLinearFiltering)
-				gl.uniform2f(
-					advectionProgram.uniforms.dyeTexelSize,
-					dye.texelSizeX,
-					dye.texelSizeY,
-				);
-			gl.uniform1i(
-				advectionProgram.uniforms.uVelocity,
-				velocity.read.attach(0),
-			);
-			gl.uniform1i(advectionProgram.uniforms.uSource, dye.read.attach(1));
-			gl.uniform1f(
-				advectionProgram.uniforms.dissipation,
-				config.DENSITY_DISSIPATION,
-			);
-			blit(dye.write);
-			dye.swap();
-		}
-
-		function render(target) {
-			gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-			gl.enable(gl.BLEND);
-			drawDisplay(target);
-		}
-
-		function drawDisplay(target) {
-			var width = target == null ? gl.drawingBufferWidth : target.width;
-			var height = target == null ? gl.drawingBufferHeight : target.height;
-			displayMaterial.bind();
-			if (config.SHADING)
-				gl.uniform2f(
-					displayMaterial.uniforms.texelSize,
-					1.0 / width,
-					1.0 / height,
-				);
-			gl.uniform1i(displayMaterial.uniforms.uTexture, dye.read.attach(0));
-			gl.uniform1f(
-				displayMaterial.uniforms.uLightMode,
-				document.documentElement.classList.contains('dark') ? 0.0 : 1.0,
-			);
-			blit(target);
-		}
-
-		function splatPointer(pointer) {
-			var dx = pointer.deltaX * config.SPLAT_FORCE;
-			var dy = pointer.deltaY * config.SPLAT_FORCE;
-			splat(pointer.texcoordX, pointer.texcoordY, dx, dy, pointer.color);
-		}
-
-		function clickSplat(pointer) {
-			var color = generateColor();
-			color.r *= 10.0;
-			color.g *= 10.0;
-			color.b *= 10.0;
-			var dx = 10 * (Math.random() - 0.5);
-			var dy = 30 * (Math.random() - 0.5);
-			splat(pointer.texcoordX, pointer.texcoordY, dx, dy, color);
-		}
-
-		function splat(x, y, dx, dy, color) {
-			splatProgram.bind();
-			gl.uniform1i(splatProgram.uniforms.uTarget, velocity.read.attach(0));
-			gl.uniform1f(
-				splatProgram.uniforms.aspectRatio,
-				canvas.width / canvas.height,
-			);
-			gl.uniform2f(splatProgram.uniforms.point, x, y);
-			gl.uniform3f(splatProgram.uniforms.color, dx, dy, 0.0);
-			gl.uniform1f(
-				splatProgram.uniforms.radius,
-				correctRadius(config.SPLAT_RADIUS / 100.0),
-			);
-			blit(velocity.write);
-			velocity.swap();
-
-			gl.uniform1i(splatProgram.uniforms.uTarget, dye.read.attach(0));
-			gl.uniform3f(splatProgram.uniforms.color, color.r, color.g, color.b);
-			blit(dye.write);
-			dye.swap();
-		}
-
-		function correctRadius(radius) {
-			var aspectRatio = canvas.width / canvas.height;
-			if (aspectRatio > 1) radius *= aspectRatio;
-			return radius;
-		}
-
-		function updatePointerDownData(pointer, id, posX, posY) {
-			pointer.id = id;
-			pointer.down = true;
-			pointer.moved = false;
-			pointer.texcoordX = posX / canvas.width;
-			pointer.texcoordY = 1.0 - posY / canvas.height;
-			pointer.prevTexcoordX = pointer.texcoordX;
-			pointer.prevTexcoordY = pointer.texcoordY;
-			pointer.deltaX = 0;
-			pointer.deltaY = 0;
-			pointer.color = generateColor();
-		}
-
-		function updatePointerMoveData(pointer, posX, posY, color) {
-			pointer.prevTexcoordX = pointer.texcoordX;
-			pointer.prevTexcoordY = pointer.texcoordY;
-			pointer.texcoordX = posX / canvas.width;
-			pointer.texcoordY = 1.0 - posY / canvas.height;
-			pointer.deltaX = correctDeltaX(pointer.texcoordX - pointer.prevTexcoordX);
-			pointer.deltaY = correctDeltaY(pointer.texcoordY - pointer.prevTexcoordY);
-			pointer.moved =
-				Math.abs(pointer.deltaX) > 0 || Math.abs(pointer.deltaY) > 0;
-			pointer.color = color;
-		}
-
-		function updatePointerUpData(pointer) {
-			pointer.down = false;
-		}
-
-		function correctDeltaX(delta) {
-			var aspectRatio = canvas.width / canvas.height;
-			if (aspectRatio < 1) delta *= aspectRatio;
-			return delta;
-		}
-
-		function correctDeltaY(delta) {
-			var aspectRatio = canvas.width / canvas.height;
-			if (aspectRatio > 1) delta /= aspectRatio;
-			return delta;
-		}
-
-		function generateColor() {
-			return { r: 0.15, g: 0.15, b: 0.15 };
-		}
-
-		function wrap(value, min, max) {
-			var range = max - min;
-			if (range === 0) return min;
-			return ((value - min) % range) + min;
-		}
-
-		function getResolution(resolution) {
-			var aspectRatio = gl.drawingBufferWidth / gl.drawingBufferHeight;
-			if (aspectRatio < 1) aspectRatio = 1.0 / aspectRatio;
-			var min = Math.round(resolution);
-			var max = Math.round(resolution * aspectRatio);
-			if (gl.drawingBufferWidth > gl.drawingBufferHeight)
-				return { width: max, height: min };
-			else return { width: min, height: max };
-		}
-
-		function scaleByPixelRatio(input) {
-			var pixelRatio = window.devicePixelRatio || 1;
-			return Math.floor(input * pixelRatio);
-		}
-
-		function hashCode(s) {
-			if (s.length === 0) return 0;
-			var hash = 0;
-			for (var i = 0; i < s.length; i++) {
-				hash = (hash << 5) - hash + s.charCodeAt(i);
-				hash |= 0;
-			}
-			return hash;
-		}
-
-		function shouldSkipSplash(target) {
-			if (!target || !(target instanceof Element)) return false;
-			var element = target;
-			while (element) {
-				if (element.hasAttribute('data-skip-splash-cursor')) return true;
-				element = element.parentElement;
-			}
-			return false;
-		}
-
-		function getRelativePosition(clientX, clientY) {
-			var rect = container.getBoundingClientRect();
-			return { x: clientX - rect.left, y: clientY - rect.top };
-		}
-
-		var handleMouseDown = function (e) {
-			markActivity();
-			if (shouldSkipSplash(e.target)) return;
-			var pos = getRelativePosition(e.clientX, e.clientY);
-			var pointer = pointers[0];
-			var posX = scaleByPixelRatio(pos.x);
-			var posY = scaleByPixelRatio(pos.y);
-			updatePointerDownData(pointer, -1, posX, posY);
-			clickSplat(pointer);
-		};
-
-		var firstMouseMove = true;
-		var handleMouseMove = function (e) {
-			markActivity();
-			if (shouldSkipSplash(e.target)) return;
-			var pos = getRelativePosition(e.clientX, e.clientY);
-			var pointer = pointers[0];
-			var posX = scaleByPixelRatio(pos.x);
-			var posY = scaleByPixelRatio(pos.y);
-			if (firstMouseMove) {
-				var color = generateColor();
-				updatePointerMoveData(pointer, posX, posY, color);
-				firstMouseMove = false;
-			} else {
-				updatePointerMoveData(pointer, posX, posY, pointer.color);
-			}
-		};
-
-		var handleTouchStart = function (e) {
-			markActivity();
-			if (shouldSkipSplash(e.target)) return;
-			var touches = e.targetTouches;
-			var pointer = pointers[0];
-			for (var i = 0; i < touches.length; i++) {
-				var pos = getRelativePosition(touches[i].clientX, touches[i].clientY);
-				var posX = scaleByPixelRatio(pos.x);
-				var posY = scaleByPixelRatio(pos.y);
-				updatePointerDownData(pointer, touches[i].identifier, posX, posY);
-			}
-		};
-
-		var handleTouchMove = function (e) {
-			markActivity();
-			if (shouldSkipSplash(e.target)) return;
-			var touches = e.targetTouches;
-			var pointer = pointers[0];
-			for (var i = 0; i < touches.length; i++) {
-				var pos = getRelativePosition(touches[i].clientX, touches[i].clientY);
-				var posX = scaleByPixelRatio(pos.x);
-				var posY = scaleByPixelRatio(pos.y);
-				updatePointerMoveData(pointer, posX, posY, pointer.color);
-			}
-		};
-
-		var handleTouchEnd = function (e) {
-			var touches = e.changedTouches;
-			var pointer = pointers[0];
-			for (var i = 0; i < touches.length; i++) {
-				updatePointerUpData(pointer);
-			}
-		};
-
-		var handleVisibilityChange = function () {
-			if (document.hidden) {
-				stop();
-			} else {
-				start();
-			}
-		};
-
-		container.addEventListener('mousedown', handleMouseDown);
-		container.addEventListener('mousemove', handleMouseMove);
-		container.addEventListener('touchstart', handleTouchStart);
-		container.addEventListener('touchmove', handleTouchMove, false);
-		container.addEventListener('touchend', handleTouchEnd);
-		document.addEventListener('visibilitychange', handleVisibilityChange);
-
-		start();
+	function showLogin() {
+		state.authed = false;
+		$('#app-view').classList.add('hidden');
+		$('#login-view').classList.remove('hidden');
+		var input = $('#login-password');
+		if (input) input.value = '';
 	}
 
-	/* ================================================================ */
-	document.addEventListener('DOMContentLoaded', function () {
-		renderGroups();
+	function showApp() {
+		state.authed = true;
+		$('#login-view').classList.add('hidden');
+		$('#app-view').classList.remove('hidden');
+	}
+
+	function wireLogin() {
+		var form = $('#login-form');
+		var error = $('#login-error');
+		form.addEventListener('submit', function (e) {
+			e.preventDefault();
+			var password = $('#login-password').value;
+			error.classList.add('hidden');
+			api('/api/login', { method: 'POST', body: { password: password } })
+				.then(function () {
+					showApp();
+					route();
+				})
+				.catch(function (err) {
+					error.textContent = err.message === 'unauthorized' ? 'Wrong password.' : err.message;
+					error.classList.remove('hidden');
+				});
+		});
+	}
+
+	function wireTopbar() {
+		$('#logout-btn').addEventListener('click', function () {
+			api('/api/logout', { method: 'POST', body: {} })
+				.catch(function () {})
+				.then(function () {
+					if (location.hash) location.hash = '';
+					showLogin();
+				});
+		});
+		$('#back-btn').addEventListener('click', function () {
+			location.hash = '#/';
+		});
+	}
+
+	/* ================================================================
+	 * Router
+	 * ================================================================ */
+
+	var view = null;
+
+	function currentRoute() {
+		var name = location.hash.replace(/^#\/?/, '').replace(/\/+$/, '');
+		return ROUTES[name] ? name : '';
+	}
+
+	function route() {
+		if (!state.authed) return;
+		var name = currentRoute();
+		if (location.hash !== '#/' && name === '') {
+			location.hash = '#/';
+			return;
+		}
+		var entry = ROUTES[name];
+		$('#topbar-title').textContent = entry.title;
+		$('#back-btn').style.visibility = name === '' ? 'hidden' : 'visible';
+		document.title = (name === '' ? 'Tools' : entry.title) + ' — Sidali DJEGHBAL';
+		view.innerHTML = '<p class="muted" style="padding:6rem 0 0">Loading…</p>';
+		window.scrollTo(0, 0);
+		Promise.resolve(entry.load ? entry.load() : null)
+			.then(function () {
+				entry.render();
+			})
+			.catch(fail);
+	}
+
+	function rerender(preserveScroll) {
+		var y = window.scrollY;
+		ROUTES[currentRoute()].render();
+		if (preserveScroll) window.scrollTo(0, y);
+	}
+
+	/* ================================================================
+	 * Launcher
+	 * ================================================================ */
+
+	function renderLauncher() {
+		view.innerHTML =
+			'<header class="page"><p class="kicker">Tools</p>' +
+			'<h1>My command center.</h1>' +
+			'<p class="subtitle">Bookmarks, tasks, habits and books — all in one place.</p></header>' +
+			'<main class="page"><div class="launcher-grid">' +
+			launcherCard('start', 'compass', 'Start', 'Bookmarks and quick links') +
+			launcherCard('tasks', 'kanban', 'Tasks', 'A simple kanban board') +
+			launcherCard('habits', 'flame', 'Habits', 'Daily streaks and history') +
+			launcherCard('books', 'book', 'Books', 'Track what I read') +
+			'</div></main>' +
+			'<footer class="page"><a class="underline-magical" href="https://sidali-djeghbal.dev" target="_blank" rel="noreferrer">Sidali DJEGHBAL</a></footer>';
+	}
+
+	function launcherCard(route, icon, name, desc) {
+		return (
+			'<a class="launcher-card" href="#/' + route + '">' +
+			'<span class="launcher-top"><span class="launcher-icon">' + I[icon] + '</span>' +
+			'<span class="launcher-arrow">' + I.arrow + '</span></span>' +
+			'<span class="launcher-name">' + esc(name) + '</span>' +
+			'<span class="launcher-desc">' + esc(desc) + '</span></a>'
+		);
+	}
+
+	/* ================================================================
+	 * Start — bookmarks
+	 * ================================================================ */
+
+	function loadBookmarks() {
+		return api('/api/bookmarks').then(function (rows) {
+			state.bookmarks = rows;
+		});
+	}
+
+	function renderStart() {
+		var cards = state.bookmarks
+			.map(function (bm) {
+				return (
+					'<div class="bm-card" draggable="true" data-id="' + esc(bm.id) + '">' +
+					'<a class="bm-main" href="' + esc(bm.url) + '" target="_blank" rel="noreferrer">' +
+					'<span class="bm-icon">' + esc((bm.title || '?').trim().charAt(0).toUpperCase()) + '</span>' +
+					'<span class="bm-body"><span class="bm-title">' + esc(bm.title) + '</span>' +
+					'<span class="bm-host">' + esc(hostOf(bm.url)) + '</span></span></a>' +
+					'<div class="bm-actions">' +
+					'<button class="icon-btn" type="button" data-action="edit" aria-label="Edit link" title="Edit">' + I.pencil + '</button>' +
+					'<button class="icon-btn" type="button" data-action="delete" aria-label="Delete" title="Delete">' + I.trash + '</button>' +
+					'</div></div>'
+				);
+			})
+			.join('');
+
+		view.innerHTML =
+			'<header class="page"><div class="view-head"><div><p class="kicker">Start</p>' +
+			'<h1>Quick links.</h1><p class="subtitle">Your launcher — open, add, reorder.</p></div>' +
+			'<button class="btn primary" type="button" data-action="add">' + I.plus + 'Add link</button></div></header>' +
+			'<main class="page">' +
+			(state.bookmarks.length
+				? '<div class="bm-grid drop-zone">' + cards + '</div>'
+				: '<div class="empty">' + I.compass + '<p class="empty-title">No links yet</p>' +
+					'<p>Add your first bookmark to build your start page.</p></div>') +
+			'</main>';
+
+		var grid = view.querySelector('.bm-grid');
+		if (grid) {
+			enableDrag(
+				grid,
+				function (item) {
+					return item.dataset.id;
+				},
+				function (id, list, beforeId) {
+					var position = positionBetween(state.bookmarks, id, beforeId);
+					var bm = find(state.bookmarks, id);
+					if (!bm) return;
+					bm.position = position;
+					state.bookmarks.sort(byPosition);
+					rerender(true);
+					api('/api/bookmarks/' + id, { method: 'PUT', body: { position: position } }).catch(fail);
+				}
+			);
+		}
+
+		view.addEventListener('click', function (e) {
+			var btn = e.target.closest('[data-action]');
+			if (!btn) return;
+			var action = btn.dataset.action;
+			var card = btn.closest('[data-id]');
+			var bm = card ? find(state.bookmarks, card.dataset.id) : null;
+
+			if (action === 'add') {
+				bookmarkModal(null);
+			} else if (action === 'edit' && bm) {
+				bookmarkModal(bm);
+			} else if (action === 'delete' && bm) {
+				armDelete(btn, function () {
+					api('/api/bookmarks/' + bm.id, { method: 'DELETE' })
+						.then(function () {
+							state.bookmarks = state.bookmarks.filter(function (b) {
+								return b.id !== bm.id;
+							});
+							toast('Link deleted');
+							rerender(true);
+						})
+						.catch(fail);
+				});
+			}
+		});
+	}
+
+	function bookmarkModal(bm) {
+		var overlay = openModal(
+			bm ? 'Edit link' : 'Add link',
+			'<form id="bm-form">' +
+			'<div class="field"><label for="bm-title">Title</label>' +
+			'<input id="bm-title" class="input" name="title" required maxlength="120" value="' + esc(bm ? bm.title : '') + '" /></div>' +
+			'<div class="field"><label for="bm-url">URL</label>' +
+			'<input id="bm-url" class="input" name="url" type="url" required maxlength="2000" placeholder="https://…" value="' + esc(bm ? bm.url : '') + '" /></div>' +
+			'<div class="modal-foot"><button class="btn" type="button" data-close>Cancel</button>' +
+			'<button class="btn primary" type="submit">' + (bm ? 'Save' : 'Add') + '</button></div>' +
+			'</form>'
+		);
+		overlay.querySelector('#bm-form').addEventListener('submit', function (e) {
+			e.preventDefault();
+			var body = {
+				title: overlay.querySelector('#bm-title').value.trim(),
+				url: overlay.querySelector('#bm-url').value.trim(),
+			};
+			var req = bm
+				? api('/api/bookmarks/' + bm.id, { method: 'PUT', body: body })
+				: api('/api/bookmarks', { method: 'POST', body: body });
+			req
+				.then(function (saved) {
+					if (bm) {
+						state.bookmarks = state.bookmarks.map(function (b) {
+							return b.id === saved.id ? saved : b;
+						});
+					} else {
+						state.bookmarks.push(saved);
+					}
+					state.bookmarks.sort(byPosition);
+					closeModal();
+					toast(bm ? 'Link updated' : 'Link added');
+					rerender(true);
+				})
+				.catch(fail);
+		});
+	}
+
+	/* ================================================================
+	 * Tasks — kanban
+	 * ================================================================ */
+
+	var COLUMNS = [
+		{ key: 'todo', label: 'To do' },
+		{ key: 'doing', label: 'Doing' },
+		{ key: 'done', label: 'Done' },
+	];
+
+	function loadTasks() {
+		return api('/api/tasks').then(function (rows) {
+			state.tasks = rows;
+		});
+	}
+
+	function byPosition(a, b) {
+		return a.position - b.position || a.created_at - b.created_at;
+	}
+
+	function tasksIn(status) {
+		return state.tasks.filter(function (t) {
+			return t.status === status;
+		}).sort(byPosition);
+	}
+
+	function renderTasks() {
+		var columns = COLUMNS.map(function (col) {
+			var cards = tasksIn(col.key)
+				.map(function (task) {
+					return (
+						'<div class="task-card' + (task.status === 'done' ? ' done' : '') + '" draggable="true" data-id="' + esc(task.id) + '">' +
+						'<div class="task-row">' +
+						'<button class="check' + (task.status === 'done' ? ' checked' : '') + '" type="button" data-action="toggle" aria-label="Toggle done" aria-pressed="' + (task.status === 'done') + '">' + I.check + '</button>' +
+						'<span class="task-title">' + esc(task.title) + '</span>' +
+						'<span class="task-actions">' +
+						(col.key !== 'todo' ? '<button class="icon-btn" type="button" data-action="left" aria-label="Move left" title="Move left">' + I.chevL + '</button>' : '') +
+						(col.key !== 'done' ? '<button class="icon-btn" type="button" data-action="right" aria-label="Move right" title="Move right">' + I.chevR + '</button>' : '') +
+						'<button class="icon-btn" type="button" data-action="edit" aria-label="Edit" title="Edit">' + I.pencil + '</button>' +
+						'<button class="icon-btn" type="button" data-action="delete" aria-label="Delete" title="Delete">' + I.trash + '</button>' +
+						'</span></div>' +
+						(task.notes || task.completed_at
+							? '<div class="task-meta">' +
+								(task.notes ? esc(task.notes) + (task.completed_at ? ' · ' : '') : '') +
+								(task.completed_at ? 'done ' + esc(fmtDate(task.completed_at)) : '') +
+								'</div>'
+							: '') +
+						'</div>'
+					);
+				})
+				.join('');
+			return (
+				'<section class="kanban-col drop-zone" data-status="' + col.key + '">' +
+				'<div class="kanban-col-head"><span class="kanban-col-title">' + col.label + '</span>' +
+				'<span class="kanban-count">' + tasksIn(col.key).length + '</span></div>' +
+				'<div class="kanban-cards drop-list" data-status="' + col.key + '">' + cards + '</div>' +
+				'<div class="composer">' +
+				'<input class="input" type="text" data-compose="' + col.key + '" placeholder="Add task…" aria-label="Add task to ' + col.label + '" maxlength="300" />' +
+				'<button class="icon-btn" type="button" data-action="compose" data-status="' + col.key + '" aria-label="Add task">' + I.plus + '</button>' +
+				'</div></section>'
+			);
+		}).join('');
+
+		view.innerHTML =
+			'<header class="page"><div class="view-head"><div><p class="kicker">Tasks</p>' +
+			'<h1>The board.</h1><p class="subtitle">Drag cards between columns, or use the arrows.</p></div></div></header>' +
+			'<main class="page"><div class="board">' + columns + '</div></main>';
+
+		var board = view.querySelector('.board');
+		enableDrag(
+			board,
+			function (item) {
+				return item.dataset.id;
+			},
+			function (id, list, beforeId) {
+				var status = list.dataset.status;
+				var task = find(state.tasks, id);
+				if (!task) return;
+				var position = positionBetween(tasksIn(status), id, beforeId);
+				var changed = task.status !== status || task.position !== position;
+				task.status = status;
+				task.position = position;
+				if (changed) rerender(true);
+				api('/api/tasks/' + id, { method: 'PUT', body: { status: status, position: position } }).catch(fail);
+			}
+		);
+
+		view.addEventListener('click', function (e) {
+			var btn = e.target.closest('[data-action]');
+			if (!btn) return;
+			var action = btn.dataset.action;
+			var card = btn.closest('[data-id]');
+			var task = card ? find(state.tasks, card.dataset.id) : null;
+
+			if (action === 'compose') {
+				submitComposer(btn.dataset.status);
+			} else if (action === 'toggle' && task) {
+				toggleTaskDone(task);
+			} else if (action === 'left' && task) {
+				shiftTask(task, -1);
+			} else if (action === 'right' && task) {
+				shiftTask(task, 1);
+			} else if (action === 'edit' && task) {
+				taskModal(task);
+			} else if (action === 'delete' && task) {
+				armDelete(btn, function () {
+					api('/api/tasks/' + task.id, { method: 'DELETE' })
+						.then(function () {
+							state.tasks = state.tasks.filter(function (t) {
+								return t.id !== task.id;
+							});
+							toast('Task deleted');
+							rerender(true);
+						})
+						.catch(fail);
+				});
+			}
+		});
+
+		view.addEventListener('keydown', function (e) {
+			if (e.key === 'Enter' && e.target.matches('[data-compose]')) {
+				submitComposer(e.target.dataset.compose);
+			}
+		});
+	}
+
+	function submitComposer(status) {
+		var input = view.querySelector('[data-compose="' + status + '"]');
+		if (!input) return;
+		var title = input.value.trim();
+		if (!title) return;
+		api('/api/tasks', { method: 'POST', body: { title: title, status: status } })
+			.then(function (task) {
+				state.tasks.push(task);
+				toast('Task added');
+				rerender(true);
+				var next = view.querySelector('[data-compose="' + status + '"]');
+				if (next) next.focus();
+			})
+			.catch(fail);
+	}
+
+	function toggleTaskDone(task) {
+		var status = task.status === 'done' ? 'todo' : 'done';
+		task.status = status;
+		task.completed_at = status === 'done' ? Date.now() : null;
+		task.position = positionBetween(tasksIn(status), task.id, null);
+		rerender(true);
+		api('/api/tasks/' + task.id, {
+			method: 'PUT',
+			body: { status: status, position: task.position },
+		}).catch(fail);
+	}
+
+	function shiftTask(task, dir) {
+		var order = ['todo', 'doing', 'done'];
+		var idx = order.indexOf(task.status) + dir;
+		if (idx < 0 || idx > 2) return;
+		var status = order[idx];
+		task.status = status;
+		task.completed_at = status === 'done' ? Date.now() : null;
+		task.position = positionBetween(tasksIn(status), task.id, null);
+		rerender(true);
+		api('/api/tasks/' + task.id, {
+			method: 'PUT',
+			body: { status: status, position: task.position },
+		}).catch(fail);
+	}
+
+	function taskModal(task) {
+		var overlay = openModal(
+			'Edit task',
+			'<form id="task-form">' +
+			'<div class="field"><label for="task-title">Title</label>' +
+			'<input id="task-title" class="input" name="title" required maxlength="300" value="' + esc(task.title) + '" /></div>' +
+			'<div class="field"><label for="task-notes">Notes</label>' +
+			'<textarea id="task-notes" class="input" name="notes" maxlength="4000">' + esc(task.notes || '') + '</textarea></div>' +
+			'<div class="modal-foot"><button class="btn" type="button" data-close>Cancel</button>' +
+			'<button class="btn primary" type="submit">Save</button></div>' +
+			'</form>'
+		);
+		overlay.querySelector('#task-form').addEventListener('submit', function (e) {
+			e.preventDefault();
+			var body = {
+				title: overlay.querySelector('#task-title').value.trim(),
+				notes: overlay.querySelector('#task-notes').value,
+			};
+			api('/api/tasks/' + task.id, { method: 'PUT', body: body })
+				.then(function (saved) {
+					state.tasks = state.tasks.map(function (t) {
+						return t.id === saved.id ? saved : t;
+					});
+					closeModal();
+					toast('Task updated');
+					rerender(true);
+				})
+				.catch(fail);
+		});
+	}
+
+	/* ================================================================
+	 * Habits
+	 * ================================================================ */
+
+	var WEEKS = 18;
+
+	function loadHabits() {
+		return api('/api/habits').then(function (rows) {
+			state.habits = rows;
+		});
+	}
+
+	function streakOf(logs) {
+		var set = Object.create(null);
+		logs.forEach(function (day) {
+			set[day] = true;
+		});
+		var d = new Date();
+		if (!set[iso(d)]) d.setDate(d.getDate() - 1);
+		var n = 0;
+		while (set[iso(d)]) {
+			n++;
+			d.setDate(d.getDate() - 1);
+		}
+		return n;
+	}
+
+	function heatmapHtml(habit) {
+		var set = Object.create(null);
+		habit.logs.forEach(function (day) {
+			set[day] = true;
+		});
+		var today = todayStr();
+		var start = new Date();
+		start.setHours(12, 0, 0, 0);
+		var dow = (start.getDay() + 6) % 7; // 0 = Monday
+		start.setDate(start.getDate() - dow - (WEEKS - 1) * 7);
+
+		var cells = '';
+		for (var w = 0; w < WEEKS; w++) {
+			for (var d = 0; d < 7; d++) {
+				var date = new Date(start);
+				date.setDate(start.getDate() + w * 7 + d);
+				var day = iso(date);
+				if (day > today) {
+					cells += '<span class="hm-cell" aria-hidden="true"></span>';
+					continue;
+				}
+				var done = !!set[day];
+				cells +=
+					'<button type="button" class="hm-cell' + (done ? ' done' : '') + (day === today ? ' today' : '') +
+					'" data-id="' + esc(habit.id) + '" data-day="' + day + '" aria-pressed="' + done + '" ' +
+					'aria-label="' + day + (done ? ', done' : ', not done') + '" title="' + day + '"></button>';
+			}
+		}
+		return '<div class="heatmap" role="group" aria-label="Daily history">' + cells + '</div>';
+	}
+
+	function renderHabits() {
+		var today = todayStr();
+		var cards = state.habits
+			.map(function (habit) {
+				var streak = streakOf(habit.logs);
+				var doneToday = habit.logs.indexOf(today) !== -1;
+				return (
+					'<div class="habit-card">' +
+					'<div class="habit-head">' +
+					(habit.emoji ? '<span class="habit-emoji">' + esc(habit.emoji) + '</span>' : '') +
+					'<span class="habit-name">' + esc(habit.name) + '</span>' +
+					'<span class="habit-streak' + (streak > 0 ? ' hot' : '') + '">' + I.flame + streak + ' day streak</span>' +
+					'<button class="icon-btn" type="button" data-action="edit" data-id="' + esc(habit.id) + '" aria-label="Edit habit" title="Edit">' + I.pencil + '</button>' +
+					'<button class="icon-btn" type="button" data-action="delete" data-id="' + esc(habit.id) + '" aria-label="Delete" title="Delete">' + I.trash + '</button>' +
+					'</div>' +
+					'<div class="habit-body">' +
+					heatmapHtml(habit) +
+					'<button class="today-toggle' + (doneToday ? ' done-today' : '') + '" type="button" data-action="today" data-id="' + esc(habit.id) + '">' +
+					'<span class="check' + (doneToday ? ' checked' : '') + '">' + I.check + '</span>' +
+					(doneToday ? 'Done today' : 'Mark today') +
+					'</button>' +
+					'</div></div>'
+				);
+			})
+			.join('');
+
+		view.innerHTML =
+			'<header class="page"><div class="view-head"><div><p class="kicker">Habits</p>' +
+			'<h1>Keep the chain.</h1><p class="subtitle">Click any day to toggle it. Consistency beats intensity.</p></div>' +
+			'<button class="btn primary" type="button" data-action="add">' + I.plus + 'Add habit</button></div></header>' +
+			'<main class="page">' +
+			(state.habits.length
+				? '<div class="habit-list">' + cards + '</div>'
+				: '<div class="empty">' + I.flame + '<p class="empty-title">No habits yet</p>' +
+					'<p>Add a habit and start building a streak today.</p></div>') +
+			'</main>';
+
+		view.addEventListener('click', function (e) {
+			var cell = e.target.closest('.hm-cell[data-day]');
+			if (cell) {
+				toggleDay(cell.dataset.id, cell.dataset.day);
+				return;
+			}
+			var btn = e.target.closest('[data-action]');
+			if (!btn) return;
+			var action = btn.dataset.action;
+			var habit = find(state.habits, btn.dataset.id);
+
+			if (action === 'add') {
+				habitModal(null);
+			} else if (action === 'today' && habit) {
+				toggleDay(habit.id, todayStr());
+			} else if (action === 'edit' && habit) {
+				habitModal(habit);
+			} else if (action === 'delete' && habit) {
+				armDelete(btn, function () {
+					api('/api/habits/' + habit.id, { method: 'DELETE' })
+						.then(function () {
+							state.habits = state.habits.filter(function (h) {
+								return h.id !== habit.id;
+							});
+							toast('Habit deleted');
+							rerender(true);
+						})
+						.catch(fail);
+				});
+			}
+		});
+	}
+
+	function toggleDay(habitId, day) {
+		api('/api/habits/' + habitId + '/toggle', { method: 'POST', body: { day: day } })
+			.then(function (res) {
+				var habit = find(state.habits, habitId);
+				if (!habit) return;
+				var idx = habit.logs.indexOf(res.day);
+				if (res.done && idx === -1) habit.logs.push(res.day);
+				if (!res.done && idx !== -1) habit.logs.splice(idx, 1);
+				habit.logs.sort();
+				rerender(true);
+			})
+			.catch(fail);
+	}
+
+	function habitModal(habit) {
+		var overlay = openModal(
+			habit ? 'Edit habit' : 'Add habit',
+			'<form id="habit-form">' +
+			'<div class="field"><label for="habit-name">Name</label>' +
+			'<input id="habit-name" class="input" name="name" required maxlength="120" placeholder="e.g. Read 20 pages" value="' + esc(habit ? habit.name : '') + '" /></div>' +
+			'<div class="field"><label for="habit-emoji">Emoji (optional)</label>' +
+			'<input id="habit-emoji" class="input" name="emoji" maxlength="8" placeholder="📚" value="' + esc(habit ? habit.emoji : '') + '" /></div>' +
+			'<div class="modal-foot"><button class="btn" type="button" data-close>Cancel</button>' +
+			'<button class="btn primary" type="submit">' + (habit ? 'Save' : 'Add') + '</button></div>' +
+			'</form>'
+		);
+		overlay.querySelector('#habit-form').addEventListener('submit', function (e) {
+			e.preventDefault();
+			var body = {
+				name: overlay.querySelector('#habit-name').value.trim(),
+				emoji: overlay.querySelector('#habit-emoji').value.trim(),
+			};
+			var req = habit
+				? api('/api/habits/' + habit.id, { method: 'PUT', body: body })
+				: api('/api/habits', { method: 'POST', body: body });
+			req
+				.then(function (saved) {
+					if (habit) {
+						state.habits = state.habits.map(function (h) {
+							return h.id === saved.id ? Object.assign({}, h, saved) : h;
+						});
+					} else {
+						saved.logs = [];
+						state.habits.push(saved);
+					}
+					closeModal();
+					toast(habit ? 'Habit updated' : 'Habit added');
+					rerender(true);
+				})
+				.catch(fail);
+		});
+	}
+
+	/* ================================================================
+	 * Books
+	 * ================================================================ */
+
+	var BOOK_FILTERS = [
+		{ key: 'all', label: 'All' },
+		{ key: 'reading', label: 'Reading' },
+		{ key: 'want', label: 'Want to read' },
+		{ key: 'finished', label: 'Finished' },
+	];
+
+	var BOOK_STATUS_LABEL = { want: 'want to read', reading: 'reading', finished: 'finished' };
+
+	function loadBooks() {
+		return api('/api/books').then(function (rows) {
+			state.books = rows;
+		});
+	}
+
+	function starsHtml(rating) {
+		var out = '<span class="stars" aria-label="' + rating + ' of 5 stars">';
+		for (var i = 1; i <= 5; i++) {
+			out += '<span class="star' + (i <= rating ? ' filled' : '') + '" aria-hidden="true">★</span>';
+		}
+		return out + '</span>';
+	}
+
+	function renderBooks() {
+		var counts = { all: state.books.length, reading: 0, want: 0, finished: 0 };
+		state.books.forEach(function (b) {
+			counts[b.status] = (counts[b.status] || 0) + 1;
+		});
+
+		var chips = BOOK_FILTERS
+			.map(function (f) {
+				return (
+					'<button class="chip' + (state.bookFilter === f.key ? ' active' : '') + '" type="button" data-action="filter" data-filter="' + f.key + '">' +
+					f.label + ' · ' + counts[f.key] + '</button>'
+				);
+			})
+			.join('');
+
+		var rows = state.books
+			.filter(function (b) {
+				return state.bookFilter === 'all' || b.status === state.bookFilter;
+			})
+			.map(function (b) {
+				var progress =
+					b.status === 'reading' && b.progress > 0
+						? '<div class="progress-wrap"><div class="progress-bar"><div class="progress-fill" style="width:' + Math.min(100, b.progress) + '%"></div></div>' +
+							'<span class="progress-num">' + b.progress + '%</span></div>'
+						: '';
+				return (
+					'<div class="book-row" data-id="' + esc(b.id) + '">' +
+					'<div class="book-main"><span class="book-title">' + esc(b.title) + '</span>' +
+					'<span class="book-meta">' +
+					(b.author ? esc(b.author) : '') +
+					(b.author ? ' · ' : '') +
+					'<span class="status-chip ' + b.status + '">' + BOOK_STATUS_LABEL[b.status] + '</span>' +
+					(b.finished_at ? ' · finished ' + esc(fmtDate(b.finished_at)) : '') +
+					'</span></div>' +
+					'<div class="book-side">' +
+					(b.rating ? starsHtml(b.rating) : '') +
+					progress +
+					(b.status === 'reading' ? '<button class="btn small" type="button" data-action="finish">Finish</button>' : '') +
+					'<button class="icon-btn" type="button" data-action="edit" aria-label="Edit book" title="Edit">' + I.pencil + '</button>' +
+					'<button class="icon-btn" type="button" data-action="delete" aria-label="Delete" title="Delete">' + I.trash + '</button>' +
+					'</div></div>'
+				);
+			})
+			.join('');
+
+		view.innerHTML =
+			'<header class="page"><div class="view-head"><div><p class="kicker">Books</p>' +
+			'<h1>The bookshelf.</h1><p class="subtitle">What I am reading, what is next, what is done.</p></div>' +
+			'<button class="btn primary" type="button" data-action="add">' + I.plus + 'Add book</button></div></header>' +
+			'<main class="page"><div class="filter-row">' + chips + '</div>' +
+			(state.books.length
+				? '<div class="book-list">' + (rows || '<div class="empty"><p class="empty-title">Nothing here</p><p>No books with this status yet.</p></div>') + '</div>'
+				: '<div class="empty">' + I.book + '<p class="empty-title">No books yet</p><p>Add a book to start tracking your reading.</p></div>') +
+			'</main>';
+
+		view.addEventListener('click', function (e) {
+			var btn = e.target.closest('[data-action]');
+			if (!btn) return;
+			var action = btn.dataset.action;
+			var row = btn.closest('[data-id]');
+			var book = row ? find(state.books, row.dataset.id) : null;
+
+			if (action === 'filter') {
+				state.bookFilter = btn.dataset.filter;
+				rerender(true);
+			} else if (action === 'add') {
+				bookModal(null);
+			} else if (action === 'finish' && book) {
+				book.status = 'finished';
+				book.finished_at = Date.now();
+				book.progress = 100;
+				rerender(true);
+				api('/api/books/' + book.id, { method: 'PUT', body: { status: 'finished' } })
+					.then(function () {
+						toast('Marked as finished');
+					})
+					.catch(fail);
+			} else if (action === 'edit' && book) {
+				bookModal(book);
+			} else if (action === 'delete' && book) {
+				armDelete(btn, function () {
+					api('/api/books/' + book.id, { method: 'DELETE' })
+						.then(function () {
+							state.books = state.books.filter(function (b) {
+								return b.id !== book.id;
+							});
+							toast('Book deleted');
+							rerender(true);
+						})
+						.catch(fail);
+				});
+			}
+		});
+	}
+
+	function bookModal(book) {
+		var rating = book ? book.rating : 0;
+		var overlay = openModal(
+			book ? 'Edit book' : 'Add book',
+			'<form id="book-form">' +
+			'<div class="field"><label for="book-title">Title</label>' +
+			'<input id="book-title" class="input" name="title" required maxlength="200" value="' + esc(book ? book.title : '') + '" /></div>' +
+			'<div class="field"><label for="book-author">Author</label>' +
+			'<input id="book-author" class="input" name="author" maxlength="120" value="' + esc(book ? book.author : '') + '" /></div>' +
+			'<div class="field"><label for="book-status">Status</label>' +
+			'<select id="book-status" class="input" name="status">' +
+			'<option value="want"' + (book && book.status === 'want' ? ' selected' : '') + '>Want to read</option>' +
+			'<option value="reading"' + (book && book.status === 'reading' ? ' selected' : '') + '>Reading</option>' +
+			'<option value="finished"' + (book && book.status === 'finished' ? ' selected' : '') + '>Finished</option>' +
+			'</select></div>' +
+			'<div class="field"><label for="book-progress">Progress (%)</label>' +
+			'<input id="book-progress" class="input" name="progress" type="number" min="0" max="100" value="' + (book ? book.progress : 0) + '" /></div>' +
+			'<div class="field"><label>Rating</label>' +
+			'<div class="stars" id="book-stars" role="radiogroup" aria-label="Rating">' +
+			[1, 2, 3, 4, 5]
+				.map(function (n) {
+					return '<button class="star' + (n <= rating ? ' filled' : '') + '" type="button" data-star="' + n + '" role="radio" aria-checked="' + (n === rating) + '" aria-label="' + n + ' star' + (n > 1 ? 's' : '') + '">★</button>';
+				})
+				.join('') +
+			'</div></div>' +
+			'<div class="field"><label for="book-notes">Notes</label>' +
+			'<textarea id="book-notes" class="input" name="notes" maxlength="4000">' + esc(book ? book.notes || '' : '') + '</textarea></div>' +
+			'<div class="modal-foot"><button class="btn" type="button" data-close>Cancel</button>' +
+			'<button class="btn primary" type="submit">' + (book ? 'Save' : 'Add') + '</button></div>' +
+			'</form>'
+		);
+
+		var stars = overlay.querySelector('#book-stars');
+		stars.addEventListener('click', function (e) {
+			var star = e.target.closest('[data-star]');
+			if (!star) return;
+			rating = Number(star.dataset.star) === rating ? 0 : Number(star.dataset.star);
+			stars.querySelectorAll('.star').forEach(function (el) {
+				var n = Number(el.dataset.star);
+				el.classList.toggle('filled', n <= rating);
+				el.setAttribute('aria-checked', String(n === rating));
+			});
+		});
+
+		overlay.querySelector('#book-form').addEventListener('submit', function (e) {
+			e.preventDefault();
+			var status = overlay.querySelector('#book-status').value;
+			var body = {
+				title: overlay.querySelector('#book-title').value.trim(),
+				author: overlay.querySelector('#book-author').value.trim(),
+				status: status,
+				progress: Number(overlay.querySelector('#book-progress').value) || 0,
+				rating: rating,
+				notes: overlay.querySelector('#book-notes').value,
+			};
+			var req = book
+				? api('/api/books/' + book.id, { method: 'PUT', body: body })
+				: api('/api/books', { method: 'POST', body: body });
+			req
+				.then(function (saved) {
+					if (book) {
+						state.books = state.books.map(function (b) {
+							return b.id === saved.id ? saved : b;
+						});
+					} else {
+						state.books.unshift(saved);
+					}
+					closeModal();
+					toast(book ? 'Book updated' : 'Book added');
+					rerender(true);
+				})
+				.catch(fail);
+		});
+	}
+
+	/* ================================================================
+	 * Utilities + boot
+	 * ================================================================ */
+
+	function find(list, id) {
+		for (var i = 0; i < list.length; i++) {
+			if (list[i].id === id) return list[i];
+		}
+		return null;
+	}
+
+	var ROUTES = {
+		'': { title: 'Command center', render: renderLauncher },
+		start: { title: 'Start', load: loadBookmarks, render: renderStart },
+		tasks: { title: 'Tasks', load: loadTasks, render: renderTasks },
+		habits: { title: 'Habits', load: loadHabits, render: renderHabits },
+		books: { title: 'Books', load: loadBooks, render: renderBooks },
+	};
+
+	window.addEventListener('hashchange', route);
+
+	function init() {
+		view = $('#view');
 		setupTheme();
-		initSplash();
-	});
+		wireLogin();
+		wireTopbar();
+		api('/api/session')
+			.then(function () {
+				showApp();
+				route();
+			})
+			.catch(function () {
+				showLogin();
+			});
+	}
+
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', init);
+	} else {
+		init();
+	}
 })();
