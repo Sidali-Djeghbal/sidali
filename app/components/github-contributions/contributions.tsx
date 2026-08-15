@@ -4,18 +4,28 @@ import { Fragment, useState } from 'react';
 import useSWR from 'swr';
 import Calendar from './calendar';
 import Days from './days';
-import { GITHUB_USERNAME, getContributions } from './github';
+import { type ContributionCalendar, GITHUB_USERNAME } from './github';
 import GithubCalendarSkeleton from './github-calendar-skeleton';
 import GithubStats from './github-stats';
 import GithubStatsSkeleton from './github-stats-skeleton';
 import YearSelect from './year-select';
+
+const fetcher = async (year: number): Promise<ContributionCalendar> => {
+	const response = await fetch(`/api/github-contributions?year=${year}`);
+
+	if (!response.ok) {
+		throw new Error(`Failed to fetch contributions: ${response.status}`);
+	}
+
+	return response.json();
+};
 
 export default function Contributions() {
 	const [year, setYear] = useState(new Date().getFullYear());
 
 	const { data: contributions, isLoading } = useSWR(
 		['contributions', GITHUB_USERNAME, year], // Cache key
-		() => getContributions(GITHUB_USERNAME, year),
+		() => fetcher(year),
 	);
 
 	if (!contributions || isLoading) {

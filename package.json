@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "opennextjs-cloudflare build",
     "serve": "next start",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
@@ -16,7 +16,6 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "@octokit/graphql": "^9.0.0",
     "@radix-ui/react-tooltip": "1.2.8",
     "@tailwindcss/postcss": "^4.0.15",
     "@types/node": "24.10.1",
