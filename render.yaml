@@ -64,6 +64,7 @@ services:
   - type: keyvalue
     name: redis
     plan: free
+    maxmemoryPolicy: noeviction
     ipAllowList:
       - source: 0.0.0.0/0
         description: everywhere
