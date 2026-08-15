@@ -8,6 +8,8 @@
 	var notes = [];
 	var currentId = null;
 	var saveTimer = null;
+	var editor = null;
+	var loadingContent = false;
 
 	var $ = function (sel) {
 		return document.querySelector(sel);
@@ -16,6 +18,11 @@
 	function setView(name) {
 		$('#login-view').classList.toggle('hidden', name !== 'login');
 		$('#workspace-view').classList.toggle('hidden', name !== 'workspace');
+		if (name === 'workspace') {
+			$('#fixed-toolbar').classList.remove('hidden');
+		} else {
+			$('#fixed-toolbar').classList.add('hidden');
+		}
 	}
 
 	function getToken() {
@@ -105,18 +112,34 @@
 				currentId = null;
 				$('#editor').classList.add('hidden');
 				$('#empty-editor').classList.remove('hidden');
+				$('#fixed-toolbar').classList.add('hidden');
 			}
 		} catch (e) {
 			showEditorStatus('sync failed');
 		}
 	}
 
+	function setEditorContent(content) {
+		if (!editor) return;
+		loadingContent = true;
+		editor.commands.setContent(content || '<p></p>', false);
+		loadingContent = false;
+		editor.commands.blur();
+	}
+
 	function setCurrent(id, title, content, ts) {
 		currentId = id;
 		$('#note-title').value = title || '';
-		$('#note-content').value = content || '';
+		setEditorContent(content);
+		var byline = $('#editor-byline');
+		if (ts) {
+			byline.textContent = 'Updated ' + timeAgo(ts);
+		} else {
+			byline.textContent = '';
+		}
 		$('#empty-editor').classList.add('hidden');
 		$('#editor').classList.remove('hidden');
+		$('#fixed-toolbar').classList.remove('hidden');
 		renderList();
 		try {
 			localStorage.setItem(CURRENT_KEY, id);
@@ -128,6 +151,7 @@
 			return n.id === id;
 		});
 		if (!note) return;
+		if (id === currentId) return;
 		try {
 			var full = await api('/' + id);
 			setCurrent(full.id, full.title, full.content, full.updated_at);
@@ -153,7 +177,7 @@
 	async function saveCurrent() {
 		if (!currentId) return;
 		var title = $('#note-title').value;
-		var content = $('#note-content').value;
+		var content = editor ? editor.getHTML() : '';
 		var now = Date.now();
 		try {
 			var saved = await api('/' + currentId, {
@@ -172,6 +196,7 @@
 				notes.unshift(moved);
 				renderList();
 			}
+			$('#editor-byline').textContent = 'Updated just now';
 			showEditorStatus('saved');
 		} catch (e) {
 			showEditorStatus('save failed');
@@ -201,11 +226,162 @@
 			});
 			currentId = null;
 			$('#editor').classList.add('hidden');
+			$('#fixed-toolbar').classList.add('hidden');
 			$('#empty-editor').classList.remove('hidden');
 			renderList();
 		} catch (e) {}
 	}
 
+	/* --- Toolbar wiring --- */
+	function updateToolbar() {
+		if (!editor) return;
+		var isActive = function (name, attrs) {
+			return attrs ? editor.isActive(name, attrs) : editor.isActive(name);
+		};
+		var map = {
+			bold: isActive('bold'),
+			italic: isActive('italic'),
+			strike: isActive('strike'),
+			code: isActive('code'),
+			bulletList: isActive('bulletList'),
+			orderedList: isActive('orderedList'),
+			blockquote: isActive('blockquote'),
+			codeBlock: isActive('codeBlock'),
+		};
+		document.querySelectorAll('.toolbar-btn[data-cmd]').forEach(function (btn) {
+			var cmd = btn.getAttribute('data-cmd');
+			btn.classList.toggle('active', !!map[cmd]);
+		});
+
+		var select = $('#block-type');
+		if (editor.isActive('heading', { level: 1 })) select.value = 'heading1';
+		else if (editor.isActive('heading', { level: 2 })) select.value = 'heading2';
+		else if (editor.isActive('heading', { level: 3 })) select.value = 'heading3';
+		else select.value = 'paragraph';
+	}
+
+	function runCommand(cmd) {
+		if (!editor) return;
+		var chain = editor.chain();
+		switch (cmd) {
+			case 'undo':
+				chain.undo().run();
+				break;
+			case 'redo':
+				chain.redo().run();
+				break;
+			case 'bold':
+				chain.toggleBold().run();
+				break;
+			case 'italic':
+				chain.toggleItalic().run();
+				break;
+			case 'strike':
+				chain.toggleStrike().run();
+				break;
+			case 'code':
+				chain.toggleCode().run();
+				break;
+			case 'bulletList':
+				chain.toggleBulletList().run();
+				break;
+			case 'orderedList':
+				chain.toggleOrderedList().run();
+				break;
+			case 'blockquote':
+				chain.toggleBlockquote().run();
+				break;
+			case 'codeBlock':
+				chain.toggleCodeBlock().run();
+				break;
+			case 'horizontalRule':
+				chain.setHorizontalRule().run();
+				break;
+		}
+		updateToolbar();
+		editor.commands.focus();
+	}
+
+	function applyBlockType(value) {
+		if (!editor) return;
+		var chain = editor.chain();
+		switch (value) {
+			case 'heading1':
+				chain.setHeading({ level: 1 }).run();
+				break;
+			case 'heading2':
+				chain.setHeading({ level: 2 }).run();
+				break;
+			case 'heading3':
+				chain.setHeading({ level: 3 }).run();
+				break;
+			default:
+				chain.setParagraph().run();
+				break;
+		}
+		updateToolbar();
+		editor.commands.focus();
+	}
+
+	/* --- TipTap editor init --- */
+	function initEditor() {
+		if (!window.Tiptap || !window.Tiptap.Editor) {
+			showEditorStatus('editor failed to load');
+			return;
+		}
+		var T = window.Tiptap;
+		var Placeholder = T.Placeholder;
+		editor = new T.Editor({
+			element: document.querySelector('#editor-content'),
+			extensions: [
+				T.StarterKit.configure({
+					heading: { levels: [1, 2, 3] },
+				}),
+				Placeholder.configure({
+					placeholder: function (params) {
+						if (params.node.type.name === 'heading') {
+							return 'Heading ' + params.node.attrs.level;
+						}
+						return "Write anything. Enter '/' for commands";
+					},
+					includeChildren: true,
+					showOnlyWhenEditable: true,
+				}),
+			],
+			content: '<p></p>',
+			editorProps: {
+				attributes: {
+					class: 'ProseMirror',
+					spellcheck: 'false',
+				},
+				handleKeyDown: function (view, event) {
+					if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
+						event.preventDefault();
+						clearTimeout(saveTimer);
+						saveCurrent();
+						return true;
+					}
+					return false;
+				},
+			},
+			onUpdate: function () {
+				updateToolbar();
+				if (!loadingContent) scheduleSave();
+			},
+			onSelectionUpdate: updateToolbar,
+		});
+
+		document.querySelectorAll('.toolbar-btn[data-cmd]').forEach(function (btn) {
+			btn.addEventListener('click', function () {
+				runCommand(btn.getAttribute('data-cmd'));
+			});
+		});
+		$('#block-type').addEventListener('change', function (e) {
+			applyBlockType(e.target.value);
+		});
+	}
+
+	/* --- Login --- */
 	function initLogin() {
 		$('#login-form').addEventListener('submit', function (e) {
 			e.preventDefault();
@@ -233,6 +409,7 @@
 				openNote(notes[0].id);
 			} else {
 				$('#empty-editor').classList.remove('hidden');
+				$('#fixed-toolbar').classList.add('hidden');
 			}
 		} catch (e) {
 			if (e.message === 'unauthorized') return;
@@ -241,27 +418,18 @@
 
 	function init() {
 		$('#new-note').addEventListener('click', createNote);
+		$('#empty-new-note').addEventListener('click', createNote);
 		$('#delete-note').addEventListener('click', deleteNote);
 		$('#note-title').addEventListener('input', scheduleSave);
-		$('#note-content').addEventListener('input', scheduleSave);
 		$('#note-title').addEventListener('keydown', function (e) {
 			if (e.key === 'Enter') {
 				e.preventDefault();
-				$('#note-content').focus();
-			}
-		});
-		$('#note-content').addEventListener('keydown', function (e) {
-			if ((e.metaKey || e.ctrlKey) && e.key === 's') {
-				e.preventDefault();
-				clearTimeout(saveTimer);
-				saveCurrent();
-			}
-			if (e.key === 'Escape' && !currentId) {
-				$('#note-content').blur();
+				if (editor) editor.commands.focus();
 			}
 		});
 
 		initLogin();
+		initEditor();
 
 		if (getToken()) {
 			load();

@@ -8,7 +8,7 @@
 			name="description"
 			content="Personal notes, synced across devices on Cloudflare D1."
 		/>
-		<meta name="theme-color" content="#000000" />
+		<meta name="theme-color" content="#1b1b1b" />
 		<link
 			rel="icon"
 			href="https://sidali-djeghbal.dev/static/favicons/favicon-32x32.png"
@@ -34,72 +34,110 @@
 	</head>
 	<body>
 		<div id="splash">
-			<button
-				id="theme-toggle"
-				type="button"
-				aria-label="Toggle dark mode"
-				title="Toggle dark mode"
-				data-skip-splash-cursor
-			></button>
-
-			<header class="page">
-				<p class="kicker">
-					<a href="/" class="back-link" data-skip-splash-cursor>&larr; Tools</a>
-				</p>
-				<h1>Notes</h1>
-				<p class="subtitle">Synced across devices on Cloudflare D1.</p>
+			<header class="notes-header">
+				<div class="notes-header-inner">
+					<a class="notes-brand" href="/" data-skip-splash-cursor>
+						<span class="notes-brand-icon" aria-hidden="true">
+							<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.5Z"/><path d="M15 3v5h5"/></svg>
+						</span>
+						<span class="notes-brand-name">Notes</span>
+					</a>
+					<div class="notes-header-actions">
+						<a class="notes-header-link" href="/" data-skip-splash-cursor>Tools</a>
+						<button
+							id="theme-toggle"
+							type="button"
+							aria-label="Toggle dark mode"
+							title="Toggle dark mode"
+							data-skip-splash-cursor
+						></button>
+					</div>
+				</div>
 			</header>
 
-			<main id="notes-app" class="page notes-app">
-				<section id="login-view" class="login hidden">
-					<form id="login-form" class="login-card">
-						<label class="login-label" for="password">Password</label>
-						<input
-							id="password"
-							name="password"
-							type="password"
-							class="login-input"
-							autocomplete="current-password"
-							required
-						/>
-						<p id="login-error" class="login-error hidden"></p>
-						<button type="submit" class="login-button">Unlock notes</button>
-					</form>
-				</section>
+			<section id="login-view" class="login hidden">
+				<form id="login-form" class="login-card">
+					<h1 class="login-title">Notes</h1>
+					<label class="login-label" for="password">Password</label>
+					<input
+						id="password"
+						name="password"
+						type="password"
+						class="login-input"
+						autocomplete="current-password"
+						required
+					/>
+					<p id="login-error" class="login-error hidden"></p>
+					<button type="submit" class="login-button">Unlock notes</button>
+				</form>
+			</section>
 
-				<section id="workspace-view" class="workspace hidden">
-					<aside class="notes-list">
+			<div id="workspace-view" class="workspace hidden">
+				<aside class="sidebar">
+					<div class="sidebar-inner">
 						<button id="new-note" type="button" class="new-note">
-							+ New note
+							+ New page
 						</button>
-						<ul id="notes-list" class="notes-list-items"></ul>
-					</aside>
-					<section id="editor" class="editor hidden">
-						<input
-							id="note-title"
-							type="text"
-							class="note-title"
-							placeholder="Untitled"
-							aria-label="Note title"
-						/>
-						<textarea
-							id="note-content"
-							class="note-content"
-							placeholder="Start writing…"
-							spellcheck="false"
-						></textarea>
-						<div class="editor-toolbar">
+						<div class="pages-header">Pages</div>
+						<ul id="notes-list" class="notes-list"></ul>
+					</div>
+				</aside>
+
+				<main class="main-area">
+					<div id="fixed-toolbar" class="fixed-toolbar hidden">
+						<div class="toolbar-inner">
+							<select id="block-type" class="toolbar-select" title="Block type" aria-label="Block type">
+								<option value="paragraph">Paragraph</option>
+								<option value="heading1">Heading 1</option>
+								<option value="heading2">Heading 2</option>
+								<option value="heading3">Heading 3</option>
+							</select>
+							<button type="button" data-cmd="undo" class="toolbar-btn" title="Undo (Ctrl+Z)" aria-label="Undo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg></button>
+							<button type="button" data-cmd="redo" class="toolbar-btn" title="Redo (Ctrl+Y)" aria-label="Redo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/></svg></button>
+							<div class="toolbar-divider"></div>
+							<button type="button" data-cmd="bold" class="toolbar-btn" title="Bold (Ctrl+B)" aria-label="Bold"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 12a4 4 0 0 0 0-8H6v8"/><path d="M15 20a4 4 0 0 0 0-8H6v8Z"/></svg></button>
+							<button type="button" data-cmd="italic" class="toolbar-btn" title="Italic (Ctrl+I)" aria-label="Italic"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 4h-9"/><path d="M14 20H5"/><path d="M15 4 9 20"/></svg></button>
+							<button type="button" data-cmd="strike" class="toolbar-btn" title="Strikethrough (Ctrl+Shift+S)" aria-label="Strikethrough"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4H9a3 3 0 0 0-2.83 4"/><path d="M14 12a4 4 0 0 1 0 8H6"/><path d="M4 12 20 12"/></svg></button>
+							<button type="button" data-cmd="code" class="toolbar-btn" title="Inline code" aria-label="Inline code"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 18 6-6-6-6"/><path d="m8 6-6 6 6 6"/></svg></button>
+							<div class="toolbar-divider"></div>
+							<button type="button" data-cmd="bulletList" class="toolbar-btn" title="Bullet list" aria-label="Bullet list"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h.01"/><path d="M3 18h.01"/><path d="M3 6h.01"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M8 6h13"/></svg></button>
+							<button type="button" data-cmd="orderedList" class="toolbar-btn" title="Numbered list" aria-label="Numbered list"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 12h11"/><path d="M10 18h11"/><path d="M10 6h11"/><path d="M4 10h2"/><path d="M4 6h1v4"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg></button>
+							<div class="toolbar-divider"></div>
+							<button type="button" data-cmd="blockquote" class="toolbar-btn" title="Blockquote" aria-label="Blockquote"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z"/></svg></button>
+							<button type="button" data-cmd="codeBlock" class="toolbar-btn" title="Code block" aria-label="Code block"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 4.27 9 3l6 6-6 6-1.5-1.73L12 9z"/><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></button>
+							<button type="button" data-cmd="horizontalRule" class="toolbar-btn" title="Divider" aria-label="Divider"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h.01"/><path d="M6 12h.01"/><path d="M9 12h.01"/><path d="M12 12h.01"/><path d="M15 12h.01"/><path d="M18 12h.01"/><path d="M21 12h.01"/></svg></button>
+						</div>
+					</div>
+
+					<div id="empty-editor" class="editor-empty hidden">
+						<div class="editor-empty-icon" aria-hidden="true">
+							<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.5Z"/><path d="M15 3v5h5"/></svg>
+						</div>
+						<p>Select a page or create a new one.</p>
+						<button type="button" class="login-button" id="empty-new-note">New page</button>
+					</div>
+
+					<article id="editor" class="editor hidden">
+						<div class="editor-inner">
+							<input
+								id="note-title"
+								type="text"
+								class="note-title"
+								placeholder="Untitled"
+								aria-label="Page title"
+							/>
+							<div class="editor-byline" id="editor-byline"></div>
+							<div id="editor-content"></div>
+						</div>
+						<div class="editor-footer">
+							<span class="editor-status" id="editor-status"></span>
 							<button id="delete-note" type="button" class="delete-note">
 								Delete
 							</button>
-							<span class="editor-status" id="editor-status"></span>
 						</div>
-					</section>
-					<div id="empty-editor" class="editor-empty hidden">
-						<p>Select a note or create a new one.</p>
-					</div>
-				</section>
-			</main>
+					</article>
+				</main>
+			</div>
 
 			<footer class="page">
 				<a
@@ -114,6 +152,7 @@
 		</div>
 
 		<script src="/app.js"></script>
+		<script src="/tiptap.js"></script>
 		<script src="/notes.js"></script>
 	</body>
 </html>
