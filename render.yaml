@@ -1,10 +1,15 @@
 # Render Blueprint for Docmost (self-hosted, free tier)
-# Deploys the official docmost/docmost Docker image; Postgres + Redis are
-# external (Supabase / Upstash), file storage is Cloudflare R2 (S3 driver).
+# Deploys the official docmost/docmost Docker image; Postgres is external
+# (Supabase), Redis is a Render Key Value instance, file storage is
+# Cloudflare R2 (S3 driver).
+#
+# Why Render Key Value instead of Upstash: Docmost's parseRedisUrl() ignores
+# the rediss:// protocol (docmost/docmost#1681), so it cannot use TLS-only
+# providers like Upstash. Render's Key Value speaks plain redis://.
 #
 # Usage:
 #   1. Complete the steps in docmost-setup.md first (R2 bucket + API token,
-#      Supabase Postgres, Upstash Redis).
+#      Supabase Postgres). Skip the Upstash step.
 #   2. Push this file to your repo, then Render -> New -> Blueprint Instance,
 #      pick this repo, and set the marked env vars (sync: false) in the
 #      Dashboard before the first deploy.
@@ -45,9 +50,20 @@ services:
       # --- Secrets: fill these in the Render Dashboard before first deploy ---
       - key: DATABASE_URL
         sync: false
+      # --- Redis: Render Key Value (no TLS, works with Docmost) ---
       - key: REDIS_URL
-        sync: false
+        fromService:
+          name: redis
+          type: keyvalue
+          property: connectionString
       - key: AWS_S3_ACCESS_KEY_ID
         sync: false
       - key: AWS_S3_SECRET_ACCESS_KEY
         sync: false
+
+  - type: keyvalue
+    name: redis
+    plan: free
+    ipAllowList:
+      - source: 0.0.0.0/0
+        description: everywhere
