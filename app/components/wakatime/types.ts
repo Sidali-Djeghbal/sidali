@@ -29,14 +29,14 @@ export interface UserStats {
 	daily_average: number; // Average coding activity per day (in seconds)
 	total_seconds: number; // Total logged time (in seconds)
 	total_seconds_including_other_language: number; // Total logged time including non-coding activity (in seconds)
-	projects: [
-		{
-			name: string; // Project name
-			total_seconds: number; // Total logged time for project (in seconds)
-			percent: number; // Percentage of total logged time for project
-			decimal: string; // Total logged time for project in decimal format (e.g., "5.25")
-			digital: string; // Total logged time for project in digital clock format (e.g., "5:15")
-			text: string; // Total logged time for project as human-readable string
-		},
-	];
+	projects: ProjectStats[];
+}
+
+interface ProjectStats {
+	name: string; // Project name
+	total_seconds: number; // Total logged time for project (in seconds)
+	percent: number; // Percentage of total logged time for project
+	decimal: string; // Total logged time for project in decimal format (e.g., "5.25")
+	digital: string; // Total logged time for project in digital clock format (e.g., "5:15")
+	text: string; // Total logged time for project as human-readable string
 }
