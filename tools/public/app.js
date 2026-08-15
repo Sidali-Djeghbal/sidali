@@ -34,7 +34,7 @@
 			items: [
 				{
 					name: 'Docmost',
-					url: 'https://docmost.example.com',
+					url: 'https://docmost.sidali-djeghbal.dev',
 					desc: 'Collaborative docs',
 					icon: 'docmost',
 				},
