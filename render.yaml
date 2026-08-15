@@ -26,7 +26,7 @@ services:
     envVars:
       # --- Public/static values (safe to commit) ---
       - key: APP_URL
-        value: https://docmost.sidali-djeghbal.dev
+        value: https://docs.sidali-djeghbal.dev
       - key: PORT
         value: '3000'
       - key: STORAGE_DRIVER
