@@ -14,6 +14,9 @@
 			"database_id": "7c34ca49-2cf8-4ec0-9781-899612665571"
 		}
 	],
+	"triggers": {
+		"crons": ["*/5 * * * *"]
+	},
 	"routes": [
 		{
 			"pattern": "tools.sidali-djeghbal.dev",

@@ -68,6 +68,9 @@
 		arrow: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>',
 		chevL: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>',
 		chevR: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>',
+		chevD: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>',
+		chevU: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m18 15-6-6-6 6"/></svg>',
+		server: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="8" x="2" y="2" rx="2" ry="2"/><rect width="20" height="8" x="2" y="14" rx="2" ry="2"/><path d="M6 6h.01"/><path d="M6 18h.01"/></svg>',
 	};
 
 	/* ================================================================
@@ -81,6 +84,7 @@
 		habits: [],
 		books: [],
 		bookFilter: 'all',
+		bookExpanded: {},
 	};
 
 	function api(path, opts) {
@@ -411,12 +415,13 @@
 		view.innerHTML =
 			'<header class="page"><p class="kicker">Tools</p>' +
 			'<h1>My command center.</h1>' +
-			'<p class="subtitle">Bookmarks, tasks, habits and books — all in one place.</p></header>' +
+			'<p class="subtitle">Bookmarks, tasks, habits, books and infra — all in one place.</p></header>' +
 			'<main class="page"><div class="launcher-grid">' +
 			launcherCard('start', 'compass', 'Start', 'Bookmarks and quick links') +
 			launcherCard('tasks', 'kanban', 'Tasks', 'A simple kanban board') +
 			launcherCard('habits', 'flame', 'Habits', 'Daily streaks and history') +
-			launcherCard('books', 'book', 'Books', 'Track what I read') +
+			launcherCard('books', 'book', 'Books', 'A reading log with sessions and stats') +
+			launcherCard('infra', 'server', 'Infra', 'Dashboards, hosting and monitoring') +
 			'</div></main>' +
 			'<footer class="page"><a class="underline-magical" href="https://sidali-djeghbal.dev" target="_blank" rel="noreferrer">Sidali DJEGHBAL</a></footer>';
 	}
@@ -936,7 +941,7 @@
 	}
 
 	/* ================================================================
-	 * Books
+	 * Books — reading tracker
 	 * ================================================================ */
 
 	var BOOK_FILTERS = [
@@ -962,6 +967,106 @@
 		return out + '</span>';
 	}
 
+	function bookProgressOf(b) {
+		if (b.total_pages > 0) {
+			return Math.min(100, Math.round((b.current_page / b.total_pages) * 100));
+		}
+		return b.status === 'finished' ? 100 : b.progress || 0;
+	}
+
+	function bookPagesLabel(b) {
+		if (b.total_pages > 0) return b.current_page + ' / ' + b.total_pages + ' pages';
+		return bookProgressOf(b) + '%';
+	}
+
+	function fmtDayStr(day) {
+		var p = String(day).split('-');
+		var d = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+		return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+	}
+
+	// Aggregate reading stats across every book + session.
+	function bookStats() {
+		var reading = 0;
+		var finished = 0;
+		var pages = 0;
+		var days = Object.create(null);
+		state.books.forEach(function (b) {
+			if (b.status === 'reading') reading++;
+			if (b.status === 'finished') finished++;
+			(b.sessions || []).forEach(function (s) {
+				pages += s.pages || 0;
+				days[s.day] = true;
+			});
+		});
+		var d = new Date();
+		if (!days[iso(d)]) d.setDate(d.getDate() - 1);
+		var streak = 0;
+		while (days[iso(d)]) {
+			streak++;
+			d.setDate(d.getDate() - 1);
+		}
+		return { reading: reading, finished: finished, pages: pages, streak: streak };
+	}
+
+	function bookHeatmapHtml(b) {
+		var set = Object.create(null);
+		(b.sessions || []).forEach(function (s) {
+			set[s.day] = true;
+		});
+		var today = todayStr();
+		var start = new Date();
+		start.setHours(12, 0, 0, 0);
+		var dow = (start.getDay() + 6) % 7; // 0 = Monday
+		start.setDate(start.getDate() - dow - (WEEKS - 1) * 7);
+
+		var cells = '';
+		for (var w = 0; w < WEEKS; w++) {
+			for (var d = 0; d < 7; d++) {
+				var date = new Date(start);
+				date.setDate(start.getDate() + w * 7 + d);
+				var day = iso(date);
+				if (day > today) {
+					cells += '<span class="hm-cell" aria-hidden="true"></span>';
+					continue;
+				}
+				var done = !!set[day];
+				cells +=
+					'<span class="hm-cell' + (done ? ' done' : '') + (day === today ? ' today' : '') +
+					'" title="' + day + '" aria-hidden="true"></span>';
+			}
+		}
+		return '<div class="heatmap" role="group" aria-label="Reading history">' + cells + '</div>';
+	}
+
+	function sessionsHtml(b) {
+		var list = (b.sessions || [])
+			.slice()
+			.sort(function (a, c) {
+				return c.day < a.day ? -1 : c.day > a.day ? 1 : 0;
+			});
+		var rows = list
+			.map(function (s) {
+				return (
+					'<div class="session-row">' +
+					'<span class="session-day">' + esc(fmtDayStr(s.day)) + '</span>' +
+					'<span class="session-nums">' +
+					(s.pages ? esc(String(s.pages)) + 'p' : '') +
+					(s.pages && s.minutes ? ' · ' : '') +
+					(s.minutes ? esc(String(s.minutes)) + ' min' : '') +
+					'</span>' +
+					'<button class="icon-btn" type="button" data-action="del-session" data-sid="' + esc(s.id) + '" aria-label="Delete session" title="Delete">' + I.trash + '</button>' +
+					'</div>'
+				);
+			})
+			.join('');
+		return (
+			'<div class="session-list">' +
+			(rows || '<p class="muted">No sessions logged yet — log your first one.</p>') +
+			'</div>'
+		);
+	}
+
 	function renderBooks() {
 		var counts = { all: state.books.length, reading: 0, want: 0, finished: 0 };
 		state.books.forEach(function (b) {
@@ -977,41 +1082,65 @@
 			})
 			.join('');
 
+		var stats = bookStats();
+		var statsHtml =
+			'<div class="stat-strip">' +
+			'<div class="stat-cell"><span class="stat-num">' + stats.reading + '</span><span class="stat-label">Reading now</span></div>' +
+			'<div class="stat-cell"><span class="stat-num">' + stats.finished + '</span><span class="stat-label">Finished</span></div>' +
+			'<div class="stat-cell"><span class="stat-num">' + stats.pages + '</span><span class="stat-label">Pages read</span></div>' +
+			'<div class="stat-cell"><span class="stat-num">' + stats.streak + '</span><span class="stat-label">Day streak</span></div>' +
+			'</div>';
+
 		var rows = state.books
 			.filter(function (b) {
 				return state.bookFilter === 'all' || b.status === state.bookFilter;
 			})
 			.map(function (b) {
-				var progress =
-					b.status === 'reading' && b.progress > 0
-						? '<div class="progress-wrap"><div class="progress-bar"><div class="progress-fill" style="width:' + Math.min(100, b.progress) + '%"></div></div>' +
-							'<span class="progress-num">' + b.progress + '%</span></div>'
-						: '';
+				var progress = bookProgressOf(b);
+				var expanded = !!state.bookExpanded[b.id];
+				var progressBlock =
+					b.status === 'want'
+						? ''
+						: '<div class="progress-wrap"><div class="progress-bar"><div class="progress-fill" style="width:' + progress + '%"></div></div>' +
+							'<span class="progress-num">' + esc(bookPagesLabel(b)) + '</span></div>';
 				return (
+					'<div class="book-item">' +
 					'<div class="book-row" data-id="' + esc(b.id) + '">' +
 					'<div class="book-main"><span class="book-title">' + esc(b.title) + '</span>' +
 					'<span class="book-meta">' +
 					(b.author ? esc(b.author) : '') +
 					(b.author ? ' · ' : '') +
 					'<span class="status-chip ' + b.status + '">' + BOOK_STATUS_LABEL[b.status] + '</span>' +
+					(b.started_at ? ' · started ' + esc(fmtDate(b.started_at)) : '') +
 					(b.finished_at ? ' · finished ' + esc(fmtDate(b.finished_at)) : '') +
 					'</span></div>' +
 					'<div class="book-side">' +
 					(b.rating ? starsHtml(b.rating) : '') +
-					progress +
-					(b.status === 'reading' ? '<button class="btn small" type="button" data-action="finish">Finish</button>' : '') +
-					'<button class="icon-btn" type="button" data-action="edit" aria-label="Edit book" title="Edit">' + I.pencil + '</button>' +
-					'<button class="icon-btn" type="button" data-action="delete" aria-label="Delete" title="Delete">' + I.trash + '</button>' +
-					'</div></div>'
+					progressBlock +
+					(b.status === 'reading'
+						? '<button class="btn small" type="button" data-action="log" data-id="' + esc(b.id) + '">Log</button>' +
+							'<button class="btn small" type="button" data-action="finish" data-id="' + esc(b.id) + '">Finish</button>'
+						: '') +
+					'<button class="icon-btn" type="button" data-action="expand" data-id="' + esc(b.id) + '" aria-label="Toggle reading log" title="Reading log">' + (expanded ? I.chevU : I.chevD) + '</button>' +
+					'<button class="icon-btn" type="button" data-action="edit" data-id="' + esc(b.id) + '" aria-label="Edit book" title="Edit">' + I.pencil + '</button>' +
+					'<button class="icon-btn" type="button" data-action="delete" data-id="' + esc(b.id) + '" aria-label="Delete" title="Delete">' + I.trash + '</button>' +
+					'</div></div>' +
+					(expanded
+						? '<div class="book-detail">' +
+							'<div class="detail-heat">' + bookHeatmapHtml(b) + '</div>' +
+							'<div class="detail-sessions">' + sessionsHtml(b) + '</div>' +
+							'</div>'
+						: '') +
+					'</div>'
 				);
 			})
 			.join('');
 
 		view.innerHTML =
 			'<header class="page"><div class="view-head"><div><p class="kicker">Books</p>' +
-			'<h1>The bookshelf.</h1><p class="subtitle">What I am reading, what is next, what is done.</p></div>' +
+			'<h1>The bookshelf.</h1><p class="subtitle">A reading log — pages, sessions and streaks.</p></div>' +
 			'<button class="btn primary" type="button" data-action="add">' + I.plus + 'Add book</button></div></header>' +
-			'<main class="page"><div class="filter-row">' + chips + '</div>' +
+			'<main class="page">' + statsHtml + '<div class="filter-row">' + chips + '</div>' +
 			(state.books.length
 				? '<div class="book-list">' + (rows || '<div class="empty"><p class="empty-title">Nothing here</p><p>No books with this status yet.</p></div>') + '</div>'
 				: '<div class="empty">' + I.book + '<p class="empty-title">No books yet</p><p>Add a book to start tracking your reading.</p></div>') +
@@ -1021,20 +1150,42 @@
 			var btn = e.target.closest('[data-action]');
 			if (!btn) return;
 			var action = btn.dataset.action;
-			var row = btn.closest('[data-id]');
-			var book = row ? find(state.books, row.dataset.id) : null;
+			var id = btn.dataset.id;
+			var book = id ? find(state.books, id) : null;
 
 			if (action === 'filter') {
 				state.bookFilter = btn.dataset.filter;
 				rerender(true);
 			} else if (action === 'add') {
 				bookModal(null);
+			} else if (action === 'log' && book) {
+				sessionModal(book);
+			} else if (action === 'expand' && book) {
+				state.bookExpanded[book.id] = !state.bookExpanded[book.id];
+				rerender(true);
+			} else if (action === 'del-session') {
+				var sid = btn.dataset.sid;
+				var srow = btn.closest('.book-item');
+				var sbook = srow ? find(state.books, srow.querySelector('[data-id]').dataset.id) : null;
+				armDelete(btn, function () {
+					api('/api/books/' + sbook.id + '/sessions/' + sid, { method: 'DELETE' })
+						.then(loadBooks)
+						.then(function () {
+							toast('Session deleted');
+							rerender(true);
+						})
+						.catch(fail);
+				});
 			} else if (action === 'finish' && book) {
 				book.status = 'finished';
 				book.finished_at = Date.now();
 				book.progress = 100;
+				if (book.total_pages > 0) book.current_page = book.total_pages;
 				rerender(true);
-				api('/api/books/' + book.id, { method: 'PUT', body: { status: 'finished' } })
+				api('/api/books/' + book.id, {
+					method: 'PUT',
+					body: { status: 'finished', current_page: book.current_page },
+				})
 					.then(function () {
 						toast('Marked as finished');
 					})
@@ -1057,6 +1208,47 @@
 		});
 	}
 
+	function sessionModal(book) {
+		var today = todayStr();
+		var overlay = openModal(
+			'Log reading',
+			'<form id="session-form">' +
+			'<div class="field"><label for="sess-book">Book</label>' +
+			'<input id="sess-book" class="input" value="' + esc(book.title) + '" disabled /></div>' +
+			'<div class="field"><label for="sess-day">Date</label>' +
+			'<input id="sess-day" class="input" type="date" max="' + today + '" value="' + today + '" /></div>' +
+			'<div class="field"><label for="sess-pages">Pages read</label>' +
+			'<input id="sess-pages" class="input" type="number" min="0" max="100000" value="10" /></div>' +
+			'<div class="field"><label for="sess-minutes">Minutes (optional)</label>' +
+			'<input id="sess-minutes" class="input" type="number" min="0" max="100000" value="" placeholder="0" /></div>' +
+			'<div class="modal-foot"><button class="btn" type="button" data-close>Cancel</button>' +
+			'<button class="btn primary" type="submit">Log session</button></div>' +
+			'</form>'
+		);
+		overlay.querySelector('#session-form').addEventListener('submit', function (e) {
+			e.preventDefault();
+			var body = {
+				day: overlay.querySelector('#sess-day').value || today,
+				pages: Number(overlay.querySelector('#sess-pages').value) || 0,
+				minutes: Number(overlay.querySelector('#sess-minutes').value) || 0,
+			};
+			if (!body.pages && !body.minutes) {
+				toast('Enter pages or minutes');
+				return;
+			}
+			api('/api/books/' + book.id + '/sessions', { method: 'POST', body: body })
+				.then(function () {
+					return loadBooks();
+				})
+				.then(function () {
+					closeModal();
+					toast('Session logged');
+					rerender(true);
+				})
+				.catch(fail);
+		});
+	}
+
 	function bookModal(book) {
 		var rating = book ? book.rating : 0;
 		var overlay = openModal(
@@ -1072,8 +1264,14 @@
 			'<option value="reading"' + (book && book.status === 'reading' ? ' selected' : '') + '>Reading</option>' +
 			'<option value="finished"' + (book && book.status === 'finished' ? ' selected' : '') + '>Finished</option>' +
 			'</select></div>' +
-			'<div class="field"><label for="book-progress">Progress (%)</label>' +
-			'<input id="book-progress" class="input" name="progress" type="number" min="0" max="100" value="' + (book ? book.progress : 0) + '" /></div>' +
+			'<div class="field-row">' +
+			'<div class="field"><label for="book-total">Total pages</label>' +
+			'<input id="book-total" class="input" name="total_pages" type="number" min="0" max="10000000" value="' + (book ? book.total_pages || 0 : 0) + '" /></div>' +
+			'<div class="field"><label for="book-cur">Current page</label>' +
+			'<input id="book-cur" class="input" name="current_page" type="number" min="0" max="10000000" value="' + (book ? book.current_page || 0 : 0) + '" /></div>' +
+			'</div>' +
+			'<div class="field"><label for="book-started">Started reading</label>' +
+			'<input id="book-started" class="input" name="started_at" type="date" value="' + (book && book.started_at ? iso(new Date(book.started_at)) : '') + '" /></div>' +
 			'<div class="field"><label>Rating</label>' +
 			'<div class="stars" id="book-stars" role="radiogroup" aria-label="Rating">' +
 			[1, 2, 3, 4, 5]
@@ -1103,12 +1301,14 @@
 
 		overlay.querySelector('#book-form').addEventListener('submit', function (e) {
 			e.preventDefault();
-			var status = overlay.querySelector('#book-status').value;
+			var started = overlay.querySelector('#book-started').value;
 			var body = {
 				title: overlay.querySelector('#book-title').value.trim(),
 				author: overlay.querySelector('#book-author').value.trim(),
-				status: status,
-				progress: Number(overlay.querySelector('#book-progress').value) || 0,
+				status: overlay.querySelector('#book-status').value,
+				total_pages: Number(overlay.querySelector('#book-total').value) || 0,
+				current_page: Number(overlay.querySelector('#book-cur').value) || 0,
+				started_at: started ? new Date(started + 'T12:00:00').getTime() : null,
 				rating: rating,
 				notes: overlay.querySelector('#book-notes').value,
 			};
@@ -1122,6 +1322,7 @@
 							return b.id === saved.id ? saved : b;
 						});
 					} else {
+						saved.sessions = [];
 						state.books.unshift(saved);
 					}
 					closeModal();
@@ -1130,6 +1331,81 @@
 				})
 				.catch(fail);
 		});
+	}
+
+	/* ================================================================
+	 * Infra — dashboards & monitoring links
+	 * ================================================================ */
+
+	var INFRA_GROUPS = [
+		{
+			title: 'Hosting & data',
+			links: [
+				{
+					name: 'Render',
+					url: 'https://dashboard.render.com/web/srv-da0d3dtbedkc73agihvg',
+					desc: 'Docmost service — logs, env vars, redeploys',
+				},
+				{
+					name: 'Supabase',
+					url: 'https://supabase.com/dashboard/project/jtqlbqlcocsudrkbquhm',
+					desc: 'Postgres for Docmost',
+				},
+				{
+					name: 'Upstash',
+					url: 'https://console.upstash.com/redis/90401fa2-1ac3-40c0-82ae-3705eb06cc1c',
+					desc: 'Redis',
+				},
+				{
+					name: 'Cloudflare',
+					url: 'https://dash.cloudflare.com/0e8ab63bb93128b57f4f47ad32f95988/sidali-djeghbal.dev',
+					desc: 'DNS, R2 buckets, Workers',
+				},
+			],
+		},
+		{
+			title: 'Monitoring',
+			links: [
+				{
+					name: 'LogRocket',
+					url: 'https://app.logrocket.com/8mej4y/portfolio/metrics/logrocket-analytics',
+					desc: 'Session replay & performance',
+				},
+				{
+					name: 'Umami',
+					url: 'https://cloud.umami.is/analytics/eu/websites/ce2db398-dd36-458e-ada8-d6106f9b76c1',
+					desc: 'Privacy-friendly analytics',
+				},
+			],
+		},
+	];
+
+	function renderInfra() {
+		var sections = INFRA_GROUPS.map(function (group) {
+			var cards = group.links
+				.map(function (link) {
+					return (
+						'<a class="infra-card" href="' + esc(link.url) + '" target="_blank" rel="noreferrer">' +
+						'<span class="bm-title">' + esc(link.name) + '</span>' +
+						'<span class="bm-host">' + esc(hostOf(link.url)) + '</span>' +
+						'<span class="infra-desc">' + esc(link.desc) + '</span>' +
+						'</a>'
+					);
+				})
+				.join('');
+			return (
+				'<section class="infra-group">' +
+				'<h2 class="infra-title">' + esc(group.title) + '</h2>' +
+				'<div class="infra-grid">' + cards + '</div>' +
+				'</section>'
+			);
+		}).join('');
+
+		view.innerHTML =
+			'<header class="page"><p class="kicker">Infra</p>' +
+			'<h1>Everything behind the sites.</h1>' +
+			'<p class="subtitle">Dashboards, data stores and monitoring in one place.</p></header>' +
+			'<main class="page">' + sections + '</main>';
 	}
 
 	/* ================================================================
@@ -1149,6 +1425,7 @@
 		tasks: { title: 'Tasks', load: loadTasks, render: renderTasks },
 		habits: { title: 'Habits', load: loadHabits, render: renderHabits },
 		books: { title: 'Books', load: loadBooks, render: renderBooks },
+		infra: { title: 'Infra', render: renderInfra },
 	};
 
 	window.addEventListener('hashchange', route);

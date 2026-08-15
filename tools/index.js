@@ -21,6 +21,9 @@ const BOOK_STATUSES = ['want', 'reading', 'finished'];
 
 const loginAttempts = new Map(); // ip -> { count, resetAt }
 
+// Keeps Render free-tier Docmost awake (free instances sleep after ~15 min idle).
+const WARM_TARGET = 'https://docs.sidali-djeghbal.dev/api/health';
+
 export default {
 	async fetch(request, env) {
 		const url = new URL(request.url);
@@ -50,6 +53,12 @@ export default {
 		}
 
 		return env.ASSETS.fetch(request);
+	},
+
+	async scheduled(event, env, ctx) {
+		ctx.waitUntil(
+			fetch(WARM_TARGET).catch(() => {}),
+		);
 	},
 };
 
@@ -554,7 +563,20 @@ async function handleHabits(request, db, rest) {
 /* Books                                                               */
 /* ------------------------------------------------------------------ */
 
+function computedProgress(status, totalPages, currentPage, fallback) {
+	if (status === 'finished') return 100;
+	if (totalPages > 0) return Math.min(100, Math.round((currentPage / totalPages) * 100));
+	return fallback;
+}
+
 async function handleBooks(request, db, rest) {
+	const restPath = rest.replace(/^\/+/, '');
+	const sessionMatch = restPath.match(/^([^/]+)\/sessions(?:\/([^/]+))?$/);
+
+	if (sessionMatch) {
+		return handleBookSessions(request, db, sessionMatch[1], sessionMatch[2]);
+	}
+
 	const id = idSegment(rest);
 
 	switch (request.method) {
@@ -566,7 +588,15 @@ async function handleBooks(request, db, rest) {
 					 updated_at DESC`,
 				)
 				.all();
-			return json(results);
+			const { results: sessions } = await db
+				.prepare('SELECT * FROM book_sessions ORDER BY day ASC, created_at ASC')
+				.all();
+			const byBook = new Map(results.map((b) => [b.id, []]));
+			for (const s of sessions) {
+				const list = byBook.get(s.book_id);
+				if (list) list.push(s);
+			}
+			return json(results.map((b) => ({ ...b, sessions: byBook.get(b.id) || [] })));
 		}
 		case 'POST': {
 			const body = await readJson(request);
@@ -574,22 +604,27 @@ async function handleBooks(request, db, rest) {
 			if (!title) return json({ error: 'title is required' }, 400);
 			const status = BOOK_STATUSES.includes(body.status) ? body.status : 'want';
 			const now = Date.now();
+			const total_pages = int(body.total_pages, 0, 10000000) ?? 0;
+			const current_page = int(body.current_page, 0, 10000000) ?? 0;
 			const book = {
 				id: crypto.randomUUID(),
 				title,
 				author: str(body.author, { max: 120, fallback: '' }) || '',
 				status,
 				rating: int(body.rating, 0, 5) ?? 0,
-				progress: status === 'finished' ? 100 : int(body.progress, 0, 100) ?? 0,
+				total_pages,
+				current_page,
+				progress: computedProgress(status, total_pages, current_page, int(body.progress, 0, 100) ?? 0),
 				notes: str(body.notes, { max: 4000, fallback: '' }) || '',
+				started_at: int(body.started_at, 0, 9007199254740991) ?? null,
 				finished_at: status === 'finished' ? now : null,
 				created_at: now,
 				updated_at: now,
 			};
 			await db
 				.prepare(
-					`INSERT INTO books (id, title, author, status, rating, progress, notes, finished_at, created_at, updated_at)
-					 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+					`INSERT INTO books (id, title, author, status, rating, total_pages, current_page, progress, notes, started_at, finished_at, created_at, updated_at)
+					 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 				)
 				.bind(
 					book.id,
@@ -597,14 +632,17 @@ async function handleBooks(request, db, rest) {
 					book.author,
 					book.status,
 					book.rating,
+					book.total_pages,
+					book.current_page,
 					book.progress,
 					book.notes,
+					book.started_at,
 					book.finished_at,
 					book.created_at,
 					book.updated_at,
 				)
 				.run();
-			return json(book, 201);
+			return json({ ...book, sessions: [] }, 201);
 		}
 		case 'PUT': {
 			const invalid = requireId(request, rest);
@@ -617,7 +655,22 @@ async function handleBooks(request, db, rest) {
 			if (!existing) return json({ error: 'not found' }, 404);
 
 			const status = body.status ?? existing.status;
-			const extraSets = [{ column: 'updated_at', value: Date.now() }];
+			const total_pages = body.total_pages !== undefined
+				? int(body.total_pages, 0, 10000000) ?? existing.total_pages
+				: existing.total_pages;
+			const current_page = body.current_page !== undefined
+				? int(body.current_page, 0, 10000000) ?? existing.current_page
+				: existing.current_page;
+			const progress = body.progress !== undefined
+				? computedProgress(status, total_pages, current_page, int(body.progress, 0, 100) ?? existing.progress)
+				: computedProgress(status, total_pages, current_page, existing.progress);
+
+			const extraSets = [
+				{ column: 'updated_at', value: Date.now() },
+				{ column: 'progress', value: progress },
+				{ column: 'total_pages', value: total_pages },
+				{ column: 'current_page', value: current_page },
+			];
 			if (status !== existing.status) {
 				extraSets.push({
 					column: 'finished_at',
@@ -633,8 +686,8 @@ async function handleBooks(request, db, rest) {
 					['author', 'author'],
 					['status', 'status'],
 					['rating', 'rating'],
-					['progress', 'progress'],
 					['notes', 'notes'],
+					['started_at', 'started_at'],
 				],
 				{ ...body, id },
 				extraSets,
@@ -645,10 +698,48 @@ async function handleBooks(request, db, rest) {
 		case 'DELETE': {
 			const invalid = requireId(request, rest);
 			if (invalid) return invalid;
-			await db.prepare('DELETE FROM books WHERE id = ?').bind(id).run();
+			await db.batch([
+				db.prepare('DELETE FROM book_sessions WHERE book_id = ?').bind(id),
+				db.prepare('DELETE FROM books WHERE id = ?').bind(id),
+			]);
 			return json({ ok: true });
 		}
 		default:
 			return json({ error: 'method not allowed' }, 405);
 	}
+}
+
+async function handleBookSessions(request, db, bookId, sessionId) {
+	if (request.method === 'POST' && !sessionId) {
+		const book = await getById(db, 'books', bookId);
+		if (!book) return json({ error: 'not found' }, 404);
+		const body = await readJson(request);
+		const day = String(body.day || '');
+		if (!DAY_PATTERN.test(day) || day > new Date().toISOString().slice(0, 10)) {
+			return json({ error: 'day must be a YYYY-MM-DD not in the future' }, 400);
+		}
+		const pages = int(body.pages, 0, 100000) ?? 0;
+		const minutes = int(body.minutes, 0, 100000) ?? 0;
+		if (pages === 0 && minutes === 0) {
+			return json({ error: 'enter pages or minutes' }, 400);
+		}
+		const session = {
+			id: crypto.randomUUID(),
+			book_id: bookId,
+			day,
+			pages,
+			minutes,
+			created_at: Date.now(),
+		};
+		await db
+			.prepare('INSERT INTO book_sessions (id, book_id, day, pages, minutes, created_at) VALUES (?, ?, ?, ?, ?, ?)')
+			.bind(session.id, session.book_id, session.day, session.pages, session.minutes, session.created_at)
+			.run();
+		return json(session, 201);
+	}
+	if (request.method === 'DELETE' && sessionId) {
+		await db.prepare('DELETE FROM book_sessions WHERE id = ?').bind(sessionId).run();
+		return json({ ok: true });
+	}
+	return json({ error: 'method not allowed' }, 405);
 }

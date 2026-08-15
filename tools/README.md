@@ -1,12 +1,12 @@
 # tools.sidali-djeghbal.dev — personal command center
 
-A single Cloudflare Worker serving a password-gated SPA with four
-self-contained tools, all persisted to D1:
+A single Cloudflare Worker serving a password-gated SPA, all persisted to D1:
 
 - **Start** — bookmarks / quick links (drag to reorder)
 - **Tasks** — three-column kanban with drag & drop
 - **Habits** — daily streaks with a GitHub-style heatmap
-- **Books** — reading tracker (status, progress, rating)
+- **Books** — a reading log: page-level progress, per-day sessions and streaks
+- **Infra** — one-page links to hosting, data and monitoring dashboards
 
 No server, no monitoring, no build step — just static assets + one Worker.
 
@@ -35,6 +35,8 @@ tools/
 | `/api/habits[/:id]`             | GET POST PUT DELETE |
 | `/api/habits/:id/toggle`        | POST `{ day }` |
 | `/api/books[/:id]`              | GET POST PUT DELETE |
+| `/api/books/:id/sessions`       | POST `{ day, pages, minutes }` |
+| `/api/books/:id/sessions/:sid`  | DELETE |
 
 Auth is a signed, expiring HttpOnly cookie (30 days) issued after a
 password check. Login attempts are rate-limited per IP.
@@ -60,6 +62,7 @@ TOOLS_PASSWORD=dev-password
 cd tools
 npx wrangler d1 execute sidali-notes --local --file migrations/0001_init.sql
 npx wrangler d1 execute sidali-notes --local --file migrations/0002_command_center.sql
+npx wrangler d1 execute sidali-notes --local --file migrations/0003_reading_tracker.sql
 npx wrangler dev
 ```
 
@@ -68,6 +71,7 @@ npx wrangler dev
 ```sh
 cd tools
 npx wrangler d1 execute sidali-notes --remote --file migrations/0002_command_center.sql  # once
+npx wrangler d1 execute sidali-notes --remote --file migrations/0003_reading_tracker.sql  # once
 npx wrangler deploy
 ```
 
