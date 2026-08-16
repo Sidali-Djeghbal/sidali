@@ -1219,6 +1219,7 @@
 	}
 
 	function renderBooks() {
+		var today = todayStr();
 		var counts = { all: state.books.length, reading: 0, want: 0, finished: 0 };
 		state.books.forEach(function (b) {
 			counts[b.status] = (counts[b.status] || 0) + 1;
@@ -1269,13 +1270,21 @@
 					(b.rating ? starsHtml(b.rating) : '') +
 					progressBlock +
 					(b.status === 'reading'
-						? '<button class="btn small" type="button" data-action="log" data-id="' + esc(b.id) + '">Log</button>' +
-							'<button class="btn small" type="button" data-action="finish" data-id="' + esc(b.id) + '">Finish</button>'
+						? '<button class="btn small" type="button" data-action="finish" data-id="' + esc(b.id) + '">Finish</button>'
 						: '') +
 					'<button class="icon-btn" type="button" data-action="expand" data-id="' + esc(b.id) + '" aria-label="Toggle reading log" title="Reading log">' + (expanded ? I.chevU : I.chevD) + '</button>' +
 					'<button class="icon-btn" type="button" data-action="edit" data-id="' + esc(b.id) + '" aria-label="Edit book" title="Edit">' + I.pencil + '</button>' +
 					'<button class="icon-btn" type="button" data-action="delete" data-id="' + esc(b.id) + '" aria-label="Delete" title="Delete">' + I.trash + '</button>' +
 					'</div></div>' +
+					(b.status === 'reading'
+						? '<form class="quick-log" data-id="' + esc(b.id) + '">' +
+							'<label class="ql-label">Log reading</label>' +
+							'<input class="input ql-day" type="date" max="' + today + '" value="' + today + '" aria-label="Date" />' +
+							'<input class="input ql-pages" type="number" min="0" max="100000" placeholder="Pages" aria-label="Pages read" />' +
+							'<input class="input ql-minutes" type="number" min="0" max="100000" placeholder="Min" aria-label="Minutes" />' +
+							'<button class="btn small primary" type="submit">Log</button>' +
+							'</form>'
+						: '') +
 					(expanded
 						? '<div class="book-detail">' +
 							'<div class="detail-heat">' + bookHeatmapHtml(b) + '</div>' +
@@ -1309,8 +1318,6 @@
 				rerender(true);
 			} else if (action === 'add') {
 				bookModal(null);
-			} else if (action === 'log' && book) {
-				sessionModal(book);
 			} else if (action === 'expand' && book) {
 				state.bookExpanded[book.id] = !state.bookExpanded[book.id];
 				rerender(true);
@@ -1357,42 +1364,25 @@
 				});
 			}
 		});
-	}
 
-	function sessionModal(book) {
-		var today = todayStr();
-		var overlay = openModal(
-			'Log reading',
-			'<form id="session-form">' +
-			'<div class="field"><label for="sess-book">Book</label>' +
-			'<input id="sess-book" class="input" value="' + esc(book.title) + '" disabled /></div>' +
-			'<div class="field"><label for="sess-day">Date</label>' +
-			'<input id="sess-day" class="input" type="date" max="' + today + '" value="' + today + '" /></div>' +
-			'<div class="field"><label for="sess-pages">Pages read</label>' +
-			'<input id="sess-pages" class="input" type="number" min="0" max="100000" value="10" /></div>' +
-			'<div class="field"><label for="sess-minutes">Minutes (optional)</label>' +
-			'<input id="sess-minutes" class="input" type="number" min="0" max="100000" value="" placeholder="0" /></div>' +
-			'<div class="modal-foot"><button class="btn" type="button" data-close>Cancel</button>' +
-			'<button class="btn primary" type="submit">Log session</button></div>' +
-			'</form>'
-		);
-		overlay.querySelector('#session-form').addEventListener('submit', function (e) {
+		view.addEventListener('submit', function (e) {
+			var form = e.target.closest('form.quick-log');
+			if (!form) return;
 			e.preventDefault();
+			var book = find(state.books, form.dataset.id);
+			if (!book) return;
 			var body = {
-				day: overlay.querySelector('#sess-day').value || today,
-				pages: Number(overlay.querySelector('#sess-pages').value) || 0,
-				minutes: Number(overlay.querySelector('#sess-minutes').value) || 0,
+				day: form.querySelector('.ql-day').value || todayStr(),
+				pages: Number(form.querySelector('.ql-pages').value) || 0,
+				minutes: Number(form.querySelector('.ql-minutes').value) || 0,
 			};
 			if (!body.pages && !body.minutes) {
 				toast('Enter pages or minutes');
 				return;
 			}
 			api('/api/books/' + book.id + '/sessions', { method: 'POST', body: body })
+				.then(loadBooks)
 				.then(function () {
-					return loadBooks();
-				})
-				.then(function () {
-					closeModal();
 					toast('Session logged');
 					rerender(true);
 				})

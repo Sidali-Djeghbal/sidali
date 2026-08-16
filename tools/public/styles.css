@@ -1239,6 +1239,47 @@ html.dark .btn-github:hover {
 	justify-content: flex-end;
 }
 
+.quick-log {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	flex-wrap: wrap;
+	padding: 0 1.25rem 1.1rem;
+	border-top: 1px solid var(--card-border);
+}
+
+.ql-label {
+	font-size: 0.78rem;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	color: var(--muted);
+	margin-right: 0.25rem;
+}
+
+.quick-log .input {
+	width: auto;
+	flex: none;
+}
+
+.ql-day {
+	min-width: 8.5rem;
+}
+
+.ql-pages,
+.ql-minutes {
+	width: 4.5rem;
+}
+
+@media (max-width: 560px) {
+	.quick-log {
+		padding-top: 0.75rem;
+	}
+
+	.ql-day {
+		width: 100%;
+	}
+}
+
 .progress-wrap {
 	display: flex;
 	flex-direction: column;
