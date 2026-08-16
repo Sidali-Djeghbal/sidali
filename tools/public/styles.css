@@ -454,9 +454,74 @@ textarea.input {
 	margin-bottom: 1.5rem;
 }
 
-.login-card .btn {
+.btn-github {
 	width: 100%;
 	margin-top: 0.25rem;
+	background: #1b1f24;
+	color: #ffffff;
+	border-color: transparent;
+	font-weight: 600;
+	padding: 0.65rem 1.1rem;
+	text-decoration: none;
+}
+
+html.dark .btn-github {
+	background: #ffffff;
+	color: #000000;
+}
+
+.btn-github:hover {
+	opacity: 0.88;
+	background: #1b1f24;
+}
+
+html.dark .btn-github:hover {
+	background: #ffffff;
+}
+
+.btn-github svg {
+	width: 1.15rem;
+	height: 1.15rem;
+}
+
+.login-hint {
+	margin: 1rem 0 0;
+	text-align: center;
+	font-size: 0.8rem;
+	color: var(--muted);
+}
+
+.user-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.45rem;
+	padding: 0.2rem 0.7rem 0.2rem 0.2rem;
+	border: 1px solid var(--card-border);
+	border-radius: 999px;
+	background: var(--card);
+	font-size: 0.85rem;
+	font-weight: 500;
+	color: var(--fg);
+}
+
+.user-avatar {
+	width: 1.45rem;
+	height: 1.45rem;
+	border-radius: 999px;
+	object-fit: cover;
+}
+
+.user-name {
+	max-width: 7rem;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+@media (max-width: 480px) {
+	.user-name {
+		display: none;
+	}
 }
 
 /* --- Launcher ------------------------------------------------------ */

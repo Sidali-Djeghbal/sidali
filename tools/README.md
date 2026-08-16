@@ -1,6 +1,6 @@
 # tools.sidali-djeghbal.dev — personal command center
 
-A single Cloudflare Worker serving a password-gated SPA, all persisted to D1:
+A single Cloudflare Worker serving a GitHub-OAuth-gated SPA, all persisted to D1:
 
 - **Start** — bookmarks / quick links (drag to reorder)
 - **Tasks** — three-column kanban with drag & drop
@@ -27,7 +27,8 @@ tools/
 
 | Endpoint                        | Methods        |
 | ------------------------------- | -------------- |
-| `/api/login`                    | POST           |
+| `/api/auth/github`              | GET (starts OAuth) |
+| `/api/auth/github/callback`     | GET (OAuth callback) |
 | `/api/logout`                   | POST           |
 | `/api/session`                  | GET            |
 | `/api/bookmarks[/:id]`          | GET POST PUT DELETE |
@@ -38,22 +39,29 @@ tools/
 | `/api/books/:id/sessions`       | POST `{ day, pages, minutes }` |
 | `/api/books/:id/sessions/:sid`  | DELETE |
 
-Auth is a signed, expiring HttpOnly cookie (30 days) issued after a
-password check. Login attempts are rate-limited per IP.
+Auth is GitHub OAuth. Only the logins in `GITHUB_ALLOWED_USERS`
+(comma-separated) can sign in; a signed, expiring HttpOnly cookie
+(30 days) is issued on success. OAuth start is rate-limited per IP.
 
 ## Secrets
 
-The password is read from the `TOOLS_PASSWORD` secret (the legacy
-`NOTES_PASSWORD` still works as a fallback).
-
 ```sh
-npx wrangler secret put TOOLS_PASSWORD
+npx wrangler secret put GITHUB_CLIENT_ID
+npx wrangler secret put GITHUB_CLIENT_SECRET
+npx wrangler secret put GITHUB_ALLOWED_USERS   # e.g. Sidali-Djeghbal
 ```
+
+Create a GitHub OAuth App at github.com/settings/developers with:
+
+- Homepage URL: `https://tools.sidali-djeghbal.dev`
+- Authorization callback URL: `https://tools.sidali-djeghbal.dev/api/auth/github/callback`
 
 For local dev, create `tools/.dev.vars` (gitignored):
 
 ```
-TOOLS_PASSWORD=dev-password
+GITHUB_CLIENT_ID=dev-client-id
+GITHUB_CLIENT_SECRET=dev-client-secret
+GITHUB_ALLOWED_USERS=Sidali-Djeghbal
 ```
 
 ## Local development

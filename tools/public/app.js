@@ -102,7 +102,7 @@
 				})
 				.then(function (data) {
 					if (!res.ok) {
-						if (res.status === 401 && path !== '/api/login') {
+						if (res.status === 401 && path !== '/api/session') {
 							showLogin();
 						}
 						var msg = (data && data.error) || 'Request failed (' + res.status + ')';
@@ -323,36 +323,55 @@
 	 * Auth
 	 * ================================================================ */
 
-	function showLogin() {
+	function showLogin(message) {
 		state.authed = false;
 		$('#app-view').classList.add('hidden');
 		$('#login-view').classList.remove('hidden');
-		var input = $('#login-password');
-		if (input) input.value = '';
+		var error = $('#login-error');
+		if (message) {
+			error.textContent = message;
+			error.classList.remove('hidden');
+		} else {
+			error.classList.add('hidden');
+		}
 	}
 
-	function showApp() {
+	function showApp(user) {
 		state.authed = true;
 		$('#login-view').classList.add('hidden');
 		$('#app-view').classList.remove('hidden');
+		setUserChip(user);
+	}
+
+	function setUserChip(user) {
+		var chip = $('#user-chip');
+		if (!user || !user.login) {
+			chip.classList.add('hidden');
+			return;
+		}
+		chip.innerHTML =
+			'<img class="user-avatar" src="https://github.com/' +
+			encodeURIComponent(user.login) +
+			'.png?size=64" alt="' +
+			esc(user.login) +
+			'" />' +
+			'<span class="user-name">' +
+			esc(user.login) +
+			'</span>';
+		chip.classList.remove('hidden');
 	}
 
 	function wireLogin() {
-		var form = $('#login-form');
 		var error = $('#login-error');
-		form.addEventListener('submit', function (e) {
-			e.preventDefault();
-			var password = $('#login-password').value;
+		var params = new URLSearchParams(location.search);
+		var oauthError = params.get('error');
+		if (oauthError) {
+			showLogin(decodeURIComponent(oauthError));
+		} else {
 			error.classList.add('hidden');
-			api('/api/login', { method: 'POST', body: { password: password } })
-				.then(function () {
-					showApp();
-					route();
-				})
-				.catch(function (err) {
-					error.textContent = err.message === 'unauthorized' ? 'Wrong password.' : err.message;
-					error.classList.remove('hidden');
-				});
+		}
+		$('#github-login-btn').addEventListener('click', function () {
+			error.classList.add('hidden');
 		});
 	}
 
@@ -1436,8 +1455,8 @@
 		wireLogin();
 		wireTopbar();
 		api('/api/session')
-			.then(function () {
-				showApp();
+			.then(function (data) {
+				showApp(data && data.user);
 				route();
 			})
 			.catch(function () {

@@ -1,20 +1,27 @@
 /* Personal command center — Cloudflare Worker.
  *
  * Serves the static SPA from ASSETS and exposes a JSON API on D1:
- *   POST /api/login    { password }        -> sets signed session cookie
- *   POST /api/logout                        -> clears session cookie
- *   GET  /api/session                       -> auth probe
- *   /api/bookmarks  /api/tasks  /api/books  -> CRUD collections
+ *   GET  /api/auth/github                    -> starts GitHub OAuth flow
+ *   GET  /api/auth/github/callback           -> OAuth callback, sets session
+ *   POST /api/logout                         -> clears session cookie
+ *   GET  /api/session                        -> auth probe + user info
+ *   /api/bookmarks  /api/tasks  /api/books   -> CRUD collections
  *   /api/habits                              -> CRUD + POST /:id/toggle { day }
  *
- * Auth: sha256(password) compare, HMAC-signed expiring cookie.
- * Secret: TOOLS_PASSWORD (falls back to legacy NOTES_PASSWORD).
+ * Auth: GitHub OAuth; only logins listed in GITHUB_ALLOWED_USERS may sign in.
+ * Session: HMAC-signed expiring cookie bound to the GitHub login.
  */
 
 const SESSION_COOKIE = 'cc_session';
+const OAUTH_STATE_COOKIE = 'cc_oauth_state';
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 30; // 30 days
+const OAUTH_STATE_TTL_S = 10 * 60; // 10 minutes
 const LOGIN_WINDOW_MS = 5 * 60 * 1000;
 const LOGIN_MAX_ATTEMPTS = 10;
+
+const GITHUB_AUTHORIZE_URL = 'https://github.com/login/oauth/authorize';
+const GITHUB_TOKEN_URL = 'https://github.com/login/oauth/access_token';
+const GITHUB_USER_URL = 'https://api.github.com/user';
 
 const TASK_STATUSES = ['todo', 'doing', 'done'];
 const BOOK_STATUSES = ['want', 'reading', 'finished'];
@@ -29,20 +36,24 @@ export default {
 		const url = new URL(request.url);
 		const path = url.pathname;
 
-		if (path === '/api/login' && request.method === 'POST') {
-			return handleLogin(request, env);
+		if (path === '/api/auth/github' && request.method === 'GET') {
+			return handleGithubAuthorize(request, env);
+		}
+		if (path === '/api/auth/github/callback' && request.method === 'GET') {
+			return handleGithubCallback(request, env);
 		}
 		if (path === '/api/logout' && request.method === 'POST') {
 			return withCookie(json({ ok: true }), SESSION_COOKIE, '', 0);
 		}
 		if (path === '/api/session' && request.method === 'GET') {
-			return (await isAuthed(request, env))
-				? json({ ok: true })
+			const session = await getSession(request, env);
+			return session
+				? json({ ok: true, user: session.user })
 				: json({ error: 'unauthorized' }, 401);
 		}
 
 		if (path.startsWith('/api/')) {
-			if (!(await isAuthed(request, env))) {
+			if (!(await getSession(request, env))) {
 				return json({ error: 'unauthorized' }, 401);
 			}
 			try {
@@ -123,12 +134,8 @@ async function hmac(secret, message) {
 	);
 }
 
-function getPassword(env) {
-	return env.TOOLS_PASSWORD || env.NOTES_PASSWORD || '';
-}
-
 async function sessionSecret(env) {
-	return sha256(`${getPassword(env)}|cc-session-v1`);
+	return sha256(`${env.GITHUB_CLIENT_SECRET || ''}|cc-session-v2`);
 }
 
 function parseCookies(request) {
@@ -144,16 +151,22 @@ function parseCookies(request) {
 	return out;
 }
 
-async function isAuthed(request, env) {
-	const password = getPassword(env);
-	if (!password) return false;
+// Token layout: "<expiry>.<login>.<hmac>"
+async function getSession(request, env) {
 	const token = parseCookies(request)[SESSION_COOKIE] || '';
-	const dot = token.lastIndexOf('.');
-	if (dot === -1) return false;
-	const exp = Number(token.slice(0, dot));
-	const sig = token.slice(dot + 1);
-	if (!Number.isFinite(exp) || exp < Date.now()) return false;
-	return sig === (await hmac(await sessionSecret(env), `cc:${exp}`));
+	const dot1 = token.indexOf('.');
+	const dot2 = token.lastIndexOf('.');
+	if (dot1 === -1 || dot2 === dot1) return null;
+	const exp = Number(token.slice(0, dot1));
+	const login = token.slice(dot1 + 1, dot2);
+	const sig = token.slice(dot2 + 1);
+	if (!Number.isFinite(exp) || exp < Date.now()) return null;
+	const expected = await hmac(
+		await sessionSecret(env),
+		`cc:${exp}:${login}`,
+	);
+	if (sig !== expected) return null;
+	return { user: { login } };
 }
 
 function withCookie(response, name, value, maxAgeSeconds) {
@@ -175,31 +188,109 @@ function tooManyAttempts(ip) {
 	return entry.count > LOGIN_MAX_ATTEMPTS;
 }
 
-async function handleLogin(request, env) {
-	const password = getPassword(env);
-	if (!password) {
-		return json({ error: 'TOOLS_PASSWORD secret is not set' }, 500);
-	}
+function randomToken(bytes) {
+	const buf = new Uint8Array(bytes);
+	crypto.getRandomValues(buf);
+	return Array.from(buf)
+		.map((b) => b.toString(16).padStart(2, '0'))
+		.join('');
+}
 
+function allowedLogins(env) {
+	return String(env.GITHUB_ALLOWED_USERS || '')
+		.split(',')
+		.map((s) => s.trim().toLowerCase())
+		.filter(Boolean);
+}
+
+// Starts the GitHub OAuth flow. State is kept in a short-lived cookie so the
+// callback can verify the redirect comes from us (CSRF protection).
+// 302 redirect with mutable headers so set-cookie can be appended.
+function redirect(url, headers = {}) {
+	return new Response(null, {
+		status: 302,
+		headers: { location: url, ...headers },
+	});
+}
+
+async function handleGithubAuthorize(request, env) {
+	const clientId = env.GITHUB_CLIENT_ID;
+	if (!clientId || !env.GITHUB_CLIENT_SECRET) {
+		return json({ error: 'GitHub OAuth is not configured' }, 500);
+	}
 	const ip = request.headers.get('cf-connecting-ip') || 'local';
 	if (tooManyAttempts(ip)) {
 		return json({ error: 'too many attempts, try later' }, 429);
 	}
 
-	let body = {};
-	try {
-		body = await request.json();
-	} catch {
-		return json({ error: 'invalid body' }, 400);
+	const state = randomToken(16);
+	const redirectUri = new URL('/api/auth/github/callback', request.url).toString();
+	const params = new URLSearchParams({
+		client_id: clientId,
+		redirect_uri: redirectUri,
+		scope: 'read:user',
+		state,
+	});
+
+	const res = redirect(`${GITHUB_AUTHORIZE_URL}?${params}`);
+	return withCookie(res, OAUTH_STATE_COOKIE, state, OAUTH_STATE_TTL_S);
+}
+
+async function handleGithubCallback(request, env) {
+	const url = new URL(request.url);
+	const code = url.searchParams.get('code');
+	const state = url.searchParams.get('state');
+	const cookies = parseCookies(request);
+
+	const fail = async (message) => {
+		const res = redirect(`${url.origin}/?error=${encodeURIComponent(message)}`);
+		return withCookie(res, OAUTH_STATE_COOKIE, '', 0);
+	};
+
+	if (!code || !state || state !== cookies[OAUTH_STATE_COOKIE]) {
+		return fail('sign-in failed, please try again');
 	}
 
-	if ((await sha256(String(body.password || ''))) !== (await sha256(password))) {
-		return json({ error: 'unauthorized' }, 401);
+	const tokenRes = await fetch(GITHUB_TOKEN_URL, {
+		method: 'POST',
+		headers: {
+			'content-type': 'application/json',
+			accept: 'application/json',
+		},
+		body: JSON.stringify({
+			client_id: env.GITHUB_CLIENT_ID,
+			client_secret: env.GITHUB_CLIENT_SECRET,
+			code,
+			redirect_uri: new URL('/api/auth/github/callback', request.url).toString(),
+		}),
+	});
+	const tokenData = await tokenRes.json();
+	const accessToken = tokenData.access_token;
+	if (!accessToken) return fail('sign-in failed, please try again');
+
+	const userRes = await fetch(GITHUB_USER_URL, {
+		headers: {
+			authorization: `Bearer ${accessToken}`,
+			accept: 'application/vnd.github+json',
+			'user-agent': 'sidali-tools',
+		},
+	});
+	const user = await userRes.json();
+
+	const login = String((user && user.login) || '').toLowerCase();
+	if (!allowedLogins(env).includes(login)) {
+		return fail('your GitHub account is not allowed here');
 	}
 
 	const exp = Date.now() + SESSION_TTL_MS;
-	const sig = await hmac(await sessionSecret(env), `cc:${exp}`);
-	return withCookie(json({ ok: true }), SESSION_COOKIE, `${exp}.${sig}`, Math.round(SESSION_TTL_MS / 1000));
+	const sig = await hmac(
+		await sessionSecret(env),
+		`cc:${exp}:${login}`,
+	);
+	const res = redirect(url.origin + '/');
+	withCookie(res, SESSION_COOKIE, `${exp}.${login}.${sig}`, Math.round(SESSION_TTL_MS / 1000));
+	withCookie(res, OAUTH_STATE_COOKIE, '', 0);
+	return res;
 }
 
 /* ------------------------------------------------------------------ */
