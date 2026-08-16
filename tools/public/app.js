@@ -394,6 +394,7 @@
 	 * ================================================================ */
 
 	var view = null;
+	var clockTimer = null;
 
 	function currentRoute() {
 		var name = location.hash.replace(/^#\/?/, '').replace(/\/+$/, '');
@@ -430,28 +431,159 @@
 	 * Launcher
 	 * ================================================================ */
 
-	function renderLauncher() {
-		view.innerHTML =
-			'<header class="page"><p class="kicker">Tools</p>' +
-			'<h1>My command center.</h1>' +
-			'<p class="subtitle">Bookmarks, tasks, habits, books and infra — all in one place.</p></header>' +
-			'<main class="page"><div class="launcher-grid">' +
-			launcherCard('start', 'compass', 'Start', 'Bookmarks and quick links') +
-			launcherCard('tasks', 'kanban', 'Tasks', 'A simple kanban board') +
-			launcherCard('habits', 'flame', 'Habits', 'Daily streaks and history') +
-			launcherCard('books', 'book', 'Books', 'A reading log with sessions and stats') +
-			launcherCard('infra', 'server', 'Infra', 'Dashboards, hosting and monitoring') +
-			'</div></main>' +
-			'<footer class="page"><a class="underline-magical" href="https://sidali-djeghbal.dev" target="_blank" rel="noreferrer">Sidali DJEGHBAL</a></footer>';
+	function launcherStats() {
+		var today = todayStr();
+		var open = 0;
+		var doing = 0;
+		var doneToday = 0;
+		state.tasks.forEach(function (t) {
+			if (t.status === 'done') {
+				if (t.completed_at && iso(new Date(t.completed_at)) === today) doneToday++;
+			} else {
+				open++;
+				if (t.status === 'doing') doing++;
+			}
+		});
+		var habitsToday = 0;
+		var bestStreak = 0;
+		state.habits.forEach(function (h) {
+			if ((h.logs || []).indexOf(today) !== -1) habitsToday++;
+			var s = streakOf(h.logs || []);
+			if (s > bestStreak) bestStreak = s;
+		});
+		return {
+			open: open,
+			doing: doing,
+			doneToday: doneToday,
+			habitsToday: habitsToday,
+			habitsTotal: state.habits.length,
+			bestStreak: bestStreak,
+		};
 	}
 
-	function launcherCard(route, icon, name, desc) {
+	function currentBook() {
+		for (var i = 0; i < state.books.length; i++) {
+			if (state.books[i].status === 'reading') return state.books[i];
+		}
+		return null;
+	}
+
+	function fmtLongDate(d) {
+		return d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+	}
+
+	function fmtClock(d) {
+		return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+	}
+
+	function greetingOf(d) {
+		var h = d.getHours();
+		if (h < 5) return 'Up late';
+		if (h < 12) return 'Good morning';
+		if (h < 18) return 'Good afternoon';
+		return 'Good evening';
+	}
+
+	function startClock() {
+		if (clockTimer) clearInterval(clockTimer);
+		var el = $('#launcher-clock');
+		if (!el) return;
+		var tick = function () {
+			if (!el.isConnected) {
+				clearInterval(clockTimer);
+				clockTimer = null;
+				return;
+			}
+			el.textContent = fmtClock(new Date());
+		};
+		tick();
+		clockTimer = setInterval(tick, 30000);
+	}
+
+	function launcherHeadline() {
+		var s = launcherStats();
+		var book = currentBook();
+		var parts = [];
+		if (s.open) parts.push(s.open + (s.open === 1 ? ' open task' : ' open tasks'));
+		if (s.habitsTotal) parts.push(s.habitsToday + '/' + s.habitsTotal + ' habits today');
+		if (book) {
+			var title = book.title.length > 24 ? book.title.slice(0, 24) + '…' : book.title;
+			parts.push(bookProgressOf(book) + '% through ' + title);
+		}
+		if (!parts.length) parts.push('everything in one place');
+		return fmtLongDate(new Date()) + ' — ' + parts.join(' · ');
+	}
+
+	function renderLauncher() {
+		var s = launcherStats();
+		var book = currentBook();
+
+		var featured;
+		if (book) {
+			var progress = bookProgressOf(book);
+			featured =
+				'<span class="bento-current">' +
+				'<span class="bento-current-label">Now reading</span>' +
+				'<span class="bento-current-title">' + esc(book.title) + '</span>' +
+				(book.author ? '<span class="bento-current-author">' + esc(book.author) + '</span>' : '') +
+				'</span>' +
+				'<span class="progress-wrap"><span class="progress-bar"><span class="progress-fill" style="width:' + progress + '%"></span></span>' +
+				'<span class="progress-num">' + esc(bookPagesLabel(book)) + '</span></span>';
+		} else {
+			featured =
+				'<span class="bento-current">' +
+				'<span class="bento-current-label">Nothing in progress</span>' +
+				'<span class="bento-current-title">' +
+				(state.books.length ? 'Pick up a book.' : 'Your shelf is empty.') +
+				'</span></span>';
+		}
+
+		var bs = bookStats();
+		featured +=
+			'<span class="bento-stats">' +
+			'<span class="bento-stat"><span class="bento-num">' + bs.reading + '</span><span class="bento-num-label">reading now</span></span>' +
+			'<span class="bento-stat"><span class="bento-num">' + bs.pages + '</span><span class="bento-num-label">pages read</span></span>' +
+			'<span class="bento-stat"><span class="bento-num">' + bs.streak + '</span><span class="bento-num-label">day streak</span></span>' +
+			'</span>';
+
+		view.innerHTML =
+			'<header class="page">' +
+			'<div class="launcher-hero">' +
+			'<div><p class="kicker">Tools</p>' +
+			'<h1>' + esc(greetingOf(new Date())) + '.</h1></div>' +
+			'<span id="launcher-clock" class="launcher-clock" aria-hidden="true"></span>' +
+			'</div>' +
+			'<p class="subtitle launcher-line">' + esc(launcherHeadline()) + '</p></header>' +
+			'<main class="page"><div class="bento">' +
+			'<a class="bento-card bento-featured" href="#/books" style="--d:.02s">' +
+			'<span class="bento-top"><span class="bento-icon">' + I.book + '</span><span class="bento-arrow">' + I.arrow + '</span></span>' +
+			'<span class="bento-kicker">Books</span>' +
+			featured +
+			'</a>' +
+			bentoSmall('tasks', 'kanban', 'Tasks', s.open, 'open', s.doing + ' doing' + (s.doneToday ? ' · ' + s.doneToday + ' done today' : ''), '--d:.08s', true) +
+			bentoSmall('habits', 'flame', 'Habits', s.bestStreak, 'day streak', s.habitsTotal ? s.habitsToday + '/' + s.habitsTotal + ' done today' : 'no habits yet', '--d:.14s', true) +
+			bentoSmall('start', 'compass', 'Start', state.bookmarks.length, 'quick links', state.bookmarks.length ? 'your launcher' : 'add your first link', '--d:.2s') +
+			bentoSmall('infra', 'server', 'Infra', infraLinkCount(), 'dashboards', 'hosting & monitoring', '--d:.26s') +
+			'</div></main>' +
+			'<footer class="page"><a class="underline-magical" href="https://sidali-djeghbal.dev" target="_blank" rel="noreferrer">Sidali DJEGHBAL</a></footer>';
+		startClock();
+	}
+
+	function infraLinkCount() {
+		var n = 0;
+		INFRA_GROUPS.forEach(function (group) {
+			n += group.links.length;
+		});
+		return n;
+	}
+
+	function bentoSmall(route, icon, kicker, num, numLabel, meta, delay, sm) {
 		return (
-			'<a class="launcher-card" href="#/' + route + '">' +
-			'<span class="launcher-top"><span class="launcher-icon">' + I[icon] + '</span>' +
-			'<span class="launcher-arrow">' + I.arrow + '</span></span>' +
-			'<span class="launcher-name">' + esc(name) + '</span>' +
-			'<span class="launcher-desc">' + esc(desc) + '</span></a>'
+			'<a class="bento-card' + (sm ? ' bento-sm' : '') + '" href="#/' + route + '" style="' + delay + '">' +
+			'<span class="bento-top"><span class="bento-icon">' + I[icon] + '</span><span class="bento-arrow">' + I.arrow + '</span></span>' +
+			'<span class="bento-kicker">' + esc(kicker) + '</span>' +
+			'<span class="bento-stat"><span class="bento-num">' + esc(num) + '</span><span class="bento-num-label">' + esc(numLabel) + '</span></span>' +
+			'<span class="bento-meta">' + esc(meta) + '</span></a>'
 		);
 	}
 
@@ -1438,8 +1570,12 @@
 		return null;
 	}
 
+	function loadLauncher() {
+		return Promise.all([loadBookmarks(), loadTasks(), loadHabits(), loadBooks()]);
+	}
+
 	var ROUTES = {
-		'': { title: 'Command center', render: renderLauncher },
+		'': { title: 'Command center', load: loadLauncher, render: renderLauncher },
 		start: { title: 'Start', load: loadBookmarks, render: renderStart },
 		tasks: { title: 'Tasks', load: loadTasks, render: renderTasks },
 		habits: { title: 'Habits', load: loadHabits, render: renderHabits },
