@@ -71,6 +71,7 @@
 		chevD: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>',
 		chevU: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m18 15-6-6-6 6"/></svg>',
 		server: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="8" x="2" y="2" rx="2" ry="2"/><rect width="20" height="8" x="2" y="14" rx="2" ry="2"/><path d="M6 6h.01"/><path d="M6 18h.01"/></svg>',
+		external: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>',
 	};
 
 	/* ================================================================
@@ -644,7 +645,7 @@
 			);
 		}
 
-		view.addEventListener('click', function (e) {
+		view.onclick = function (e) {
 			var btn = e.target.closest('[data-action]');
 			if (!btn) return;
 			var action = btn.dataset.action;
@@ -668,7 +669,7 @@
 						.catch(fail);
 				});
 			}
-		});
+		};
 	}
 
 	function bookmarkModal(bm) {
@@ -797,7 +798,7 @@
 			}
 		);
 
-		view.addEventListener('click', function (e) {
+		view.onclick = function (e) {
 			var btn = e.target.closest('[data-action]');
 			if (!btn) return;
 			var action = btn.dataset.action;
@@ -827,13 +828,13 @@
 						.catch(fail);
 				});
 			}
-		});
+		};
 
-		view.addEventListener('keydown', function (e) {
+		view.onkeydown = function (e) {
 			if (e.key === 'Enter' && e.target.matches('[data-compose]')) {
 				submitComposer(e.target.dataset.compose);
 			}
-		});
+		};
 	}
 
 	function submitComposer(status) {
@@ -1005,7 +1006,7 @@
 					'<p>Add a habit and start building a streak today.</p></div>') +
 			'</main>';
 
-		view.addEventListener('click', function (e) {
+		view.onclick = function (e) {
 			var cell = e.target.closest('.hm-cell[data-day]');
 			if (cell) {
 				toggleDay(cell.dataset.id, cell.dataset.day);
@@ -1035,7 +1036,7 @@
 						.catch(fail);
 				});
 			}
-		});
+		};
 	}
 
 	function toggleDay(habitId, day) {
@@ -1110,14 +1111,6 @@
 		});
 	}
 
-	function starsHtml(rating) {
-		var out = '<span class="stars" aria-label="' + rating + ' of 5 stars">';
-		for (var i = 1; i <= 5; i++) {
-			out += '<span class="star' + (i <= rating ? ' filled' : '') + '" aria-hidden="true">★</span>';
-		}
-		return out + '</span>';
-	}
-
 	function bookProgressOf(b) {
 		if (b.total_pages > 0) {
 			return Math.min(100, Math.round((b.current_page / b.total_pages) * 100));
@@ -1166,13 +1159,37 @@
 			set[s.day] = true;
 		});
 		var today = todayStr();
-		var start = new Date();
-		start.setHours(12, 0, 0, 0);
-		var dow = (start.getDay() + 6) % 7; // 0 = Monday
-		start.setDate(start.getDate() - dow - (WEEKS - 1) * 7);
+		var now = new Date();
+		now.setHours(12, 0, 0, 0);
+		var dow = (now.getDay() + 6) % 7; // 0 = Monday
+		now.setDate(now.getDate() - dow);
+
+		var earliest = '';
+		(b.sessions || []).forEach(function (s) {
+			if (!earliest || s.day < earliest) earliest = s.day;
+		});
+		var weeks = WEEKS;
+		if (earliest) {
+			var e = earliest.split('-');
+			var startOfReading = new Date(Number(e[0]), Number(e[1]) - 1, Number(e[2]), 12, 0, 0, 0);
+			var span = Math.ceil((now.getTime() - startOfReading.getTime()) / (7 * 86400000)) + 1;
+			weeks = Math.max(1, Math.min(WEEKS, span));
+		}
+		var start = new Date(now);
+		start.setDate(start.getDate() - (weeks - 1) * 7);
+
+		var months = '';
+		var prevMonth = '';
+		for (var w = 0; w < weeks; w++) {
+			var mid = new Date(start);
+			mid.setDate(start.getDate() + w * 7 + 3);
+			var m = mid.toLocaleDateString(undefined, { month: 'short' });
+			months += '<span class="hm-month">' + (m === prevMonth ? '' : esc(m)) + '</span>';
+			prevMonth = m;
+		}
 
 		var cells = '';
-		for (var w = 0; w < WEEKS; w++) {
+		for (var w = 0; w < weeks; w++) {
 			for (var d = 0; d < 7; d++) {
 				var date = new Date(start);
 				date.setDate(start.getDate() + w * 7 + d);
@@ -1187,7 +1204,10 @@
 					'" title="' + day + '" aria-hidden="true"></span>';
 			}
 		}
-		return '<div class="heatmap" role="group" aria-label="Reading history">' + cells + '</div>';
+		return '<div class="heatmap book-heat" role="group" aria-label="Reading history">' +
+			'<div class="hm-months">' + months + '</div>' +
+			'<div class="hm-grid">' + cells + '</div>' +
+			'</div>';
 	}
 
 	function sessionsHtml(b) {
@@ -1267,7 +1287,9 @@
 					(b.finished_at ? ' · finished ' + esc(fmtDate(b.finished_at)) : '') +
 					'</span></div>' +
 					'<div class="book-side">' +
-					(b.rating ? starsHtml(b.rating) : '') +
+					(b.link
+						? '<a class="book-link icon-btn" href="' + esc(b.link) + '" target="_blank" rel="noopener noreferrer" aria-label="Open book link" title="Open book link">' + I.external + '</a>'
+						: '') +
 					progressBlock +
 					(b.status === 'reading'
 						? '<button class="btn small" type="button" data-action="finish" data-id="' + esc(b.id) + '">Finish</button>'
@@ -1306,7 +1328,7 @@
 				: '<div class="empty">' + I.book + '<p class="empty-title">No books yet</p><p>Add a book to start tracking your reading.</p></div>') +
 			'</main>';
 
-		view.addEventListener('click', function (e) {
+		view.onclick = function (e) {
 			var btn = e.target.closest('[data-action]');
 			if (!btn) return;
 			var action = btn.dataset.action;
@@ -1363,9 +1385,9 @@
 						.catch(fail);
 				});
 			}
-		});
+		};
 
-		view.addEventListener('submit', function (e) {
+		view.onsubmit = function (e) {
 			var form = e.target.closest('form.quick-log');
 			if (!form) return;
 			e.preventDefault();
@@ -1387,11 +1409,10 @@
 					rerender(true);
 				})
 				.catch(fail);
-		});
+		};
 	}
 
 	function bookModal(book) {
-		var rating = book ? book.rating : 0;
 		var overlay = openModal(
 			book ? 'Edit book' : 'Add book',
 			'<form id="book-form">' +
@@ -1413,32 +1434,14 @@
 			'</div>' +
 			'<div class="field"><label for="book-started">Started reading</label>' +
 			'<input id="book-started" class="input" name="started_at" type="date" value="' + (book && book.started_at ? iso(new Date(book.started_at)) : '') + '" /></div>' +
-			'<div class="field"><label>Rating</label>' +
-			'<div class="stars" id="book-stars" role="radiogroup" aria-label="Rating">' +
-			[1, 2, 3, 4, 5]
-				.map(function (n) {
-					return '<button class="star' + (n <= rating ? ' filled' : '') + '" type="button" data-star="' + n + '" role="radio" aria-checked="' + (n === rating) + '" aria-label="' + n + ' star' + (n > 1 ? 's' : '') + '">★</button>';
-				})
-				.join('') +
-			'</div></div>' +
+			'<div class="field"><label for="book-link">Book link (PDF, optional)</label>' +
+			'<input id="book-link" class="input" name="link" type="url" maxlength="2000" placeholder="https://…" value="' + esc(book ? book.link || '' : '') + '" /></div>' +
 			'<div class="field"><label for="book-notes">Notes</label>' +
 			'<textarea id="book-notes" class="input" name="notes" maxlength="4000">' + esc(book ? book.notes || '' : '') + '</textarea></div>' +
 			'<div class="modal-foot"><button class="btn" type="button" data-close>Cancel</button>' +
 			'<button class="btn primary" type="submit">' + (book ? 'Save' : 'Add') + '</button></div>' +
 			'</form>'
 		);
-
-		var stars = overlay.querySelector('#book-stars');
-		stars.addEventListener('click', function (e) {
-			var star = e.target.closest('[data-star]');
-			if (!star) return;
-			rating = Number(star.dataset.star) === rating ? 0 : Number(star.dataset.star);
-			stars.querySelectorAll('.star').forEach(function (el) {
-				var n = Number(el.dataset.star);
-				el.classList.toggle('filled', n <= rating);
-				el.setAttribute('aria-checked', String(n === rating));
-			});
-		});
 
 		overlay.querySelector('#book-form').addEventListener('submit', function (e) {
 			e.preventDefault();
@@ -1450,7 +1453,7 @@
 				total_pages: Number(overlay.querySelector('#book-total').value) || 0,
 				current_page: Number(overlay.querySelector('#book-cur').value) || 0,
 				started_at: started ? new Date(started + 'T12:00:00').getTime() : null,
-				rating: rating,
+				link: overlay.querySelector('#book-link').value.trim(),
 				notes: overlay.querySelector('#book-notes').value,
 			};
 			var req = book
@@ -1459,6 +1462,7 @@
 			req
 				.then(function (saved) {
 					if (book) {
+						saved.sessions = book.sessions || [];
 						state.books = state.books.map(function (b) {
 							return b.id === saved.id ? saved : b;
 						});

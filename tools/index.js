@@ -702,10 +702,10 @@ async function handleBooks(request, db, rest) {
 				title,
 				author: str(body.author, { max: 120, fallback: '' }) || '',
 				status,
-				rating: int(body.rating, 0, 5) ?? 0,
 				total_pages,
 				current_page,
 				progress: computedProgress(status, total_pages, current_page, int(body.progress, 0, 100) ?? 0),
+				link: str(body.link, { max: 2000, fallback: '' }) || '',
 				notes: str(body.notes, { max: 4000, fallback: '' }) || '',
 				started_at: int(body.started_at, 0, 9007199254740991) ?? null,
 				finished_at: status === 'finished' ? now : null,
@@ -714,7 +714,7 @@ async function handleBooks(request, db, rest) {
 			};
 			await db
 				.prepare(
-					`INSERT INTO books (id, title, author, status, rating, total_pages, current_page, progress, notes, started_at, finished_at, created_at, updated_at)
+					`INSERT INTO books (id, title, author, status, total_pages, current_page, progress, link, notes, started_at, finished_at, created_at, updated_at)
 					 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 				)
 				.bind(
@@ -722,10 +722,10 @@ async function handleBooks(request, db, rest) {
 					book.title,
 					book.author,
 					book.status,
-					book.rating,
 					book.total_pages,
 					book.current_page,
 					book.progress,
+					book.link,
 					book.notes,
 					book.started_at,
 					book.finished_at,
@@ -776,7 +776,7 @@ async function handleBooks(request, db, rest) {
 					['title', 'title'],
 					['author', 'author'],
 					['status', 'status'],
-					['rating', 'rating'],
+					['link', 'link'],
 					['notes', 'notes'],
 					['started_at', 'started_at'],
 				],
