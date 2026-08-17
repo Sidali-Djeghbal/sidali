@@ -489,6 +489,10 @@ html.dark .btn-github:hover {
 	background: #ffffff;
 }
 
+html.dark .task-card:hover {
+	box-shadow: 0 4px 12px rgba(255, 255, 255, 0.06);
+}
+
 .btn-github svg {
 	width: 1.15rem;
 	height: 1.15rem;
@@ -898,6 +902,13 @@ html.dark .btn-github:hover {
 	align-items: start;
 }
 
+.board-stats {
+	font-size: 0.82rem;
+	color: var(--muted);
+	margin-top: 0.3rem;
+	font-variant-numeric: tabular-nums;
+}
+
 .kanban-col {
 	border: 1px solid var(--card-border);
 	border-radius: var(--radius);
@@ -948,15 +959,34 @@ html.dark .btn-github:hover {
 	display: flex;
 	flex-direction: column;
 	gap: 0.5rem;
+	transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.task-card:hover {
+	transform: translateY(-1px);
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .task-card.dragging {
 	opacity: 0.45;
+	transform: translateY(-2px);
 }
 
 .task-card.done .task-title {
 	text-decoration: line-through;
 	color: var(--muted);
+}
+
+.task-card.pri-high {
+	border-left: 3px solid #c0392b;
+}
+
+.task-card.pri-medium {
+	border-left: 3px solid #e67e22;
+}
+
+.task-card.pri-low {
+	border-left: 3px solid #7f8c8d;
 }
 
 .task-row {
@@ -983,6 +1013,49 @@ html.dark .btn-github:hover {
 	justify-content: flex-end;
 	gap: 0.15rem;
 	margin-top: -0.2rem;
+	opacity: 0;
+	transition: opacity 0.15s ease;
+}
+
+.task-card:hover .task-actions {
+	opacity: 1;
+}
+
+.col-empty {
+	text-align: center;
+	color: var(--muted);
+	font-size: 0.85rem;
+	padding: 1.5rem 0.5rem;
+	font-style: italic;
+}
+
+@keyframes card-in {
+	from { opacity: 0; transform: translateY(8px); }
+	to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes check-pop {
+	0% { transform: scale(1); }
+	50% { transform: scale(1.25); }
+	100% { transform: scale(1); }
+}
+
+.task-card.just-added {
+	animation: card-in 0.25s ease;
+}
+
+.check.checked {
+	animation: check-pop 0.3s ease;
+}
+
+.undo-toast {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+}
+
+.undo-toast .btn {
+	margin-left: auto;
 }
 
 .composer {

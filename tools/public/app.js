@@ -738,11 +738,16 @@
 	}
 
 	function renderTasks() {
+		var total = state.tasks.length;
+		var doneCount = state.tasks.filter(function (t) { return t.status === 'done'; }).length;
+
 		var columns = COLUMNS.map(function (col) {
-			var cards = tasksIn(col.key)
+			var colTasks = tasksIn(col.key);
+			var cards = colTasks
 				.map(function (task) {
+					var priority = task.priority || 'none';
 					return (
-						'<div class="task-card' + (task.status === 'done' ? ' done' : '') + '" draggable="true" data-id="' + esc(task.id) + '">' +
+						'<div class="task-card' + (task.status === 'done' ? ' done' : '') + (priority !== 'none' ? ' pri-' + priority : '') + '" draggable="true" data-id="' + esc(task.id) + '">' +
 						'<div class="task-row">' +
 						'<button class="check' + (task.status === 'done' ? ' checked' : '') + '" type="button" data-action="toggle" aria-label="Toggle done" aria-pressed="' + (task.status === 'done') + '">' + I.check + '</button>' +
 						'<span class="task-title">' + esc(task.title) + '</span>' +
@@ -762,11 +767,14 @@
 					);
 				})
 				.join('');
+			var emptyState = !colTasks.length
+				? '<div class="col-empty">No tasks here yet</div>'
+				: '';
 			return (
 				'<section class="kanban-col drop-zone" data-status="' + col.key + '">' +
 				'<div class="kanban-col-head"><span class="kanban-col-title">' + col.label + '</span>' +
-				'<span class="kanban-count">' + tasksIn(col.key).length + '</span></div>' +
-				'<div class="kanban-cards drop-list" data-status="' + col.key + '">' + cards + '</div>' +
+				'<span class="kanban-count">' + colTasks.length + '</span></div>' +
+				'<div class="kanban-cards drop-list" data-status="' + col.key + '">' + cards + emptyState + '</div>' +
 				'<div class="composer">' +
 				'<input class="input" type="text" data-compose="' + col.key + '" placeholder="Add task…" aria-label="Add task to ' + col.label + '" maxlength="300" />' +
 				'<button class="icon-btn" type="button" data-action="compose" data-status="' + col.key + '" aria-label="Add task">' + I.plus + '</button>' +
@@ -776,7 +784,9 @@
 
 		view.innerHTML =
 			'<header class="page"><div class="view-head"><div><p class="kicker">Tasks</p>' +
-			'<h1>The board.</h1><p class="subtitle">Drag cards between columns, or use the arrows.</p></div></div></header>' +
+			'<h1>The board.</h1><p class="subtitle">Organize your work · drag, shift or click to move.</p>' +
+			(total ? '<p class="board-stats">' + total + ' tasks · ' + doneCount + ' done' + (total ? ' · ' + Math.round((doneCount / total) * 100) + '%' : '') + '</p>' : '') +
+			'</div></div></header>' +
 			'<main class="page"><div class="board">' + columns + '</div></main>';
 
 		var board = view.querySelector('.board');
@@ -816,17 +826,7 @@
 			} else if (action === 'edit' && task) {
 				taskModal(task);
 			} else if (action === 'delete' && task) {
-				armDelete(btn, function () {
-					api('/api/tasks/' + task.id, { method: 'DELETE' })
-						.then(function () {
-							state.tasks = state.tasks.filter(function (t) {
-								return t.id !== task.id;
-							});
-							toast('Task deleted');
-							rerender(true);
-						})
-						.catch(fail);
-				});
+				undoDeleteTask(task, btn);
 			}
 		};
 
@@ -835,6 +835,8 @@
 				submitComposer(e.target.dataset.compose);
 			}
 		};
+
+		enableSwipe(board);
 	}
 
 	function submitComposer(status) {
@@ -880,12 +882,92 @@
 		}).catch(fail);
 	}
 
+	var _undoTimer = null;
+	function undoDeleteTask(task, btn) {
+		if (_undoTimer) { clearTimeout(_undoTimer); _undoTimer = null; }
+		var snapshot = JSON.parse(JSON.stringify(state.tasks));
+		state.tasks = state.tasks.filter(function (t) { return t.id !== task.id; });
+		rerender(true);
+		var root = $('#toast-root');
+		root.innerHTML = '<div class="toast undo-toast">Task deleted<button class="btn small" id="undo-btn">Undo</button></div>';
+		var undoBtn = root.querySelector('#undo-btn');
+		if (undoBtn) undoBtn.onclick = function () {
+			clearTimeout(_undoTimer);
+			_undoTimer = null;
+			state.tasks = snapshot;
+			rerender(true);
+			toast('Restored');
+		};
+		_undoTimer = setTimeout(function () {
+			_undoTimer = null;
+			api('/api/tasks/' + task.id, { method: 'DELETE' }).catch(fail);
+			root.innerHTML = '';
+		}, 5000);
+	}
+
+	function enableSwipe(board) {
+		var startX = 0;
+		var startY = 0;
+		var swiping = null;
+		var moved = false;
+
+		board.addEventListener('touchstart', function (e) {
+			var card = e.target.closest('.task-card');
+			if (!card) return;
+			swiping = card;
+			startX = e.touches[0].clientX;
+			startY = e.touches[0].clientY;
+			moved = false;
+		}, { passive: true });
+
+		board.addEventListener('touchmove', function (e) {
+			if (!swiping) return;
+			var dx = e.touches[0].clientX - startX;
+			var dy = e.touches[0].clientY - startY;
+			if (!moved && Math.abs(dy) > Math.abs(dx)) { swiping = null; return; }
+			if (Math.abs(dx) > 10) moved = true;
+			if (moved) {
+				e.preventDefault();
+				swiping.style.transform = 'translateX(' + Math.max(-80, Math.min(80, dx)) + 'px)';
+				swiping.style.transition = 'none';
+			}
+		}, { passive: false });
+
+		board.addEventListener('touchend', function () {
+			if (!swiping) return;
+			var card = swiping;
+			swiping = null;
+			var dx = parseFloat(card.style.transform.replace(/[^-\d.]/g, '')) || 0;
+			card.style.transform = '';
+			card.style.transition = 'transform 0.2s ease';
+			if (Math.abs(dx) > 50) {
+				var task = find(state.tasks, card.dataset.id);
+				if (task) shiftTask(task, dx > 0 ? 1 : -1);
+			}
+		}, { passive: true });
+	}
+
 	function taskModal(task) {
 		var overlay = openModal(
 			'Edit task',
 			'<form id="task-form">' +
 			'<div class="field"><label for="task-title">Title</label>' +
 			'<input id="task-title" class="input" name="title" required maxlength="300" value="' + esc(task.title) + '" /></div>' +
+			'<div class="field-row">' +
+			'<div class="field"><label for="task-status">Status</label>' +
+			'<select id="task-status" class="input" name="status">' +
+			'<option value="todo"' + (task.status === 'todo' ? ' selected' : '') + '>To do</option>' +
+			'<option value="doing"' + (task.status === 'doing' ? ' selected' : '') + '>Doing</option>' +
+			'<option value="done"' + (task.status === 'done' ? ' selected' : '') + '>Done</option>' +
+			'</select></div>' +
+			'<div class="field"><label for="task-priority">Priority</label>' +
+			'<select id="task-priority" class="input" name="priority">' +
+			'<option value="none"' + ((!task.priority || task.priority === 'none') ? ' selected' : '') + '>None</option>' +
+			'<option value="low"' + (task.priority === 'low' ? ' selected' : '') + '>Low</option>' +
+			'<option value="medium"' + (task.priority === 'medium' ? ' selected' : '') + '>Medium</option>' +
+			'<option value="high"' + (task.priority === 'high' ? ' selected' : '') + '>High</option>' +
+			'</select></div>' +
+			'</div>' +
 			'<div class="field"><label for="task-notes">Notes</label>' +
 			'<textarea id="task-notes" class="input" name="notes" maxlength="4000">' + esc(task.notes || '') + '</textarea></div>' +
 			'<div class="modal-foot"><button class="btn" type="button" data-close>Cancel</button>' +
@@ -897,7 +979,10 @@
 			var body = {
 				title: overlay.querySelector('#task-title').value.trim(),
 				notes: overlay.querySelector('#task-notes').value,
+				status: overlay.querySelector('#task-status').value,
+				priority: overlay.querySelector('#task-priority').value,
 			};
+			var prevStatus = task.status;
 			api('/api/tasks/' + task.id, { method: 'PUT', body: body })
 				.then(function (saved) {
 					state.tasks = state.tasks.map(function (t) {

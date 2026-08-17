@@ -469,12 +469,14 @@ async function handleTasks(request, db, rest) {
 			const title = str(body.title, { max: 300 });
 			if (!title) return json({ error: 'title is required' }, 400);
 			const status = TASK_STATUSES.includes(body.status) ? body.status : 'todo';
+			const priority = ['high', 'medium', 'low', 'none'].includes(body.priority) ? body.priority : 'none';
 			const now = Date.now();
 			const task = {
 				id: crypto.randomUUID(),
 				title,
 				notes: str(body.notes, { max: 4000, fallback: '' }) || '',
 				status,
+				priority,
 				position: position(body.position) ?? (await maxPosition(db, 'tasks')) + 1,
 				completed_at: status === 'done' ? now : null,
 				created_at: now,
@@ -482,14 +484,15 @@ async function handleTasks(request, db, rest) {
 			};
 			await db
 				.prepare(
-					`INSERT INTO tasks (id, title, notes, status, position, completed_at, created_at, updated_at)
-					 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+					`INSERT INTO tasks (id, title, notes, status, priority, position, completed_at, created_at, updated_at)
+					 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 				)
 				.bind(
 					task.id,
 					task.title,
 					task.notes,
 					task.status,
+					task.priority,
 					task.position,
 					task.completed_at,
 					task.created_at,
@@ -523,6 +526,7 @@ async function handleTasks(request, db, rest) {
 					['title', 'title'],
 					['notes', 'notes'],
 					['status', 'status'],
+					['priority', 'priority'],
 					['position', 'position'],
 				],
 				{ ...body, id },
