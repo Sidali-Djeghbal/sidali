@@ -100,7 +100,9 @@ function json(data, status = 200) {
 		status,
 		headers: {
 			'content-type': 'application/json; charset=utf-8',
-			'cache-control': 'no-store',
+			'cache-control': 'no-cache, no-store, must-revalidate, max-age=0',
+			'pragma': 'no-cache',
+			'surrogate-control': 'no-store',
 		},
 	});
 }
