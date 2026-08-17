@@ -493,6 +493,10 @@ html.dark .task-card:hover {
 	box-shadow: 0 4px 12px rgba(255, 255, 255, 0.06);
 }
 
+html.dark .habit-card:hover {
+	box-shadow: 0 4px 12px rgba(255, 255, 255, 0.06);
+}
+
 .btn-github svg {
 	width: 1.15rem;
 	height: 1.15rem;
@@ -1102,6 +1106,12 @@ html.dark .task-card:hover {
 	display: flex;
 	flex-direction: column;
 	gap: 1rem;
+	transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.habit-card:hover {
+	transform: translateY(-1px);
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
 }
 
 .habit-head {
@@ -1142,6 +1152,18 @@ html.dark .task-card:hover {
 	font-weight: 600;
 }
 
+.habit-rate {
+	display: inline-flex;
+	align-items: center;
+	font-size: 0.78rem;
+	color: var(--muted);
+	background: var(--card);
+	border: 1px solid var(--card-border);
+	border-radius: 999px;
+	padding: 0.2rem 0.6rem;
+	white-space: nowrap;
+}
+
 .habit-streak svg {
 	width: 0.9rem;
 	height: 0.9rem;
@@ -1158,6 +1180,13 @@ html.dark .task-card:hover {
 	display: grid;
 	grid-auto-flow: column;
 	grid-template-rows: repeat(7, 1fr);
+	gap: 3px;
+}
+
+.habit-heat {
+	display: inline-grid;
+	grid-auto-flow: row;
+	grid-template-rows: auto auto;
 	gap: 3px;
 }
 
@@ -1237,6 +1266,10 @@ html.dark .task-card:hover {
 .today-toggle.done-today {
 	border-color: var(--fg);
 	font-weight: 600;
+}
+
+.today-toggle.done-today .check {
+	animation: check-pop 0.3s ease;
 }
 
 /* --- Books ------------------------------------------------------------- */
@@ -1683,8 +1716,8 @@ html.dark .task-card:hover {
 	}
 
 	.hm-cell {
-		width: 10px;
-		height: 10px;
+		width: 16px;
+		height: 16px;
 	}
 
 	.book-row {

@@ -1023,16 +1023,40 @@
 		return n;
 	}
 
+	function habitRate(logs) {
+		var set = Object.create(null);
+		logs.forEach(function (day) { set[day] = true; });
+		var d = new Date();
+		d.setHours(12, 0, 0, 0);
+		var done = 0;
+		for (var i = 0; i < 30; i++) {
+			if (set[iso(d)]) done++;
+			d.setDate(d.getDate() - 1);
+		}
+		return { done: done, pct: Math.round((done / 30) * 100) };
+	}
+
 	function heatmapHtml(habit) {
 		var set = Object.create(null);
 		habit.logs.forEach(function (day) {
 			set[day] = true;
 		});
 		var today = todayStr();
-		var start = new Date();
-		start.setHours(12, 0, 0, 0);
-		var dow = (start.getDay() + 6) % 7; // 0 = Monday
-		start.setDate(start.getDate() - dow - (WEEKS - 1) * 7);
+		var end = new Date();
+		end.setHours(12, 0, 0, 0);
+		var dow = (end.getDay() + 6) % 7; // 0 = Monday
+		var start = new Date(end);
+		start.setDate(end.getDate() - dow - (WEEKS - 1) * 7);
+
+		var months = '';
+		var prevMonth = '';
+		for (var w = 0; w < WEEKS; w++) {
+			var mid = new Date(start);
+			mid.setDate(start.getDate() + w * 7 + 3);
+			var m = mid.toLocaleDateString(undefined, { month: 'short' });
+			months += '<span class="hm-month">' + (m === prevMonth ? '' : esc(m)) + '</span>';
+			prevMonth = m;
+		}
 
 		var cells = '';
 		for (var w = 0; w < WEEKS; w++) {
@@ -1051,29 +1075,48 @@
 					'aria-label="' + day + (done ? ', done' : ', not done') + '" title="' + day + '"></button>';
 			}
 		}
-		return '<div class="heatmap" role="group" aria-label="Daily history">' + cells + '</div>';
+		return '<div class="heatmap habit-heat" role="group" aria-label="Daily history">' +
+			'<div class="hm-months">' + months + '</div>' +
+			'<div class="hm-grid">' + cells + '</div>' +
+			'</div>';
 	}
 
 	function renderHabits() {
 		var today = todayStr();
+		var doneToday = 0;
+		var bestStreak = 0;
+		state.habits.forEach(function (h) {
+			if (h.logs.indexOf(today) !== -1) doneToday++;
+			var s = streakOf(h.logs);
+			if (s > bestStreak) bestStreak = s;
+		});
+		var total = state.habits.length;
+		var statsHtml = total
+			? '<p class="board-stats">' + total + (total === 1 ? ' habit' : ' habits') +
+				' · ' + doneToday + '/' + total + ' done today' +
+				(bestStreak ? ' · ' + bestStreak + ' day best streak' : '') + '</p>'
+			: '';
+
 		var cards = state.habits
 			.map(function (habit) {
 				var streak = streakOf(habit.logs);
-				var doneToday = habit.logs.indexOf(today) !== -1;
+				var doneTodayH = habit.logs.indexOf(today) !== -1;
+				var rate = habitRate(habit.logs);
 				return (
 					'<div class="habit-card">' +
 					'<div class="habit-head">' +
 					(habit.emoji ? '<span class="habit-emoji">' + esc(habit.emoji) + '</span>' : '') +
 					'<span class="habit-name">' + esc(habit.name) + '</span>' +
 					'<span class="habit-streak' + (streak > 0 ? ' hot' : '') + '">' + I.flame + streak + ' day streak</span>' +
+					'<span class="habit-rate">' + rate.done + '/30 days · ' + rate.pct + '%</span>' +
 					'<button class="icon-btn" type="button" data-action="edit" data-id="' + esc(habit.id) + '" aria-label="Edit habit" title="Edit">' + I.pencil + '</button>' +
 					'<button class="icon-btn" type="button" data-action="delete" data-id="' + esc(habit.id) + '" aria-label="Delete" title="Delete">' + I.trash + '</button>' +
 					'</div>' +
 					'<div class="habit-body">' +
 					heatmapHtml(habit) +
-					'<button class="today-toggle' + (doneToday ? ' done-today' : '') + '" type="button" data-action="today" data-id="' + esc(habit.id) + '">' +
-					'<span class="check' + (doneToday ? ' checked' : '') + '">' + I.check + '</span>' +
-					(doneToday ? 'Done today' : 'Mark today') +
+					'<button class="today-toggle' + (doneTodayH ? ' done-today' : '') + '" type="button" data-action="today" data-id="' + esc(habit.id) + '">' +
+					'<span class="check' + (doneTodayH ? ' checked' : '') + '">' + I.check + '</span>' +
+					(doneTodayH ? 'Done today' : 'Mark today') +
 					'</button>' +
 					'</div></div>'
 				);
@@ -1082,7 +1125,8 @@
 
 		view.innerHTML =
 			'<header class="page"><div class="view-head"><div><p class="kicker">Habits</p>' +
-			'<h1>Keep the chain.</h1><p class="subtitle">Click any day to toggle it. Consistency beats intensity.</p></div>' +
+			'<h1>Build streaks that stick.</h1><p class="subtitle">Click any day to toggle it.</p>' +
+			statsHtml + '</div>' +
 			'<button class="btn primary" type="button" data-action="add">' + I.plus + 'Add habit</button></div></header>' +
 			'<main class="page">' +
 			(state.habits.length
@@ -1109,17 +1153,7 @@
 			} else if (action === 'edit' && habit) {
 				habitModal(habit);
 			} else if (action === 'delete' && habit) {
-				armDelete(btn, function () {
-					api('/api/habits/' + habit.id, { method: 'DELETE' })
-						.then(function () {
-							state.habits = state.habits.filter(function (h) {
-								return h.id !== habit.id;
-							});
-							toast('Habit deleted');
-							rerender(true);
-						})
-						.catch(fail);
-				});
+				undoDeleteHabit(habit, btn);
 			}
 		};
 	}
@@ -1136,6 +1170,29 @@
 				rerender(true);
 			})
 			.catch(fail);
+	}
+
+	var _undoHabitTimer = null;
+	function undoDeleteHabit(habit, btn) {
+		if (_undoHabitTimer) { clearTimeout(_undoHabitTimer); _undoHabitTimer = null; }
+		var snapshot = JSON.parse(JSON.stringify(state.habits));
+		state.habits = state.habits.filter(function (h) { return h.id !== habit.id; });
+		rerender(true);
+		var root = $('#toast-root');
+		root.innerHTML = '<div class="toast undo-toast">Habit deleted<button class="btn small" id="undo-habit-btn">Undo</button></div>';
+		var undoBtn = root.querySelector('#undo-habit-btn');
+		if (undoBtn) undoBtn.onclick = function () {
+			clearTimeout(_undoHabitTimer);
+			_undoHabitTimer = null;
+			state.habits = snapshot;
+			rerender(true);
+			toast('Restored');
+		};
+		_undoHabitTimer = setTimeout(function () {
+			_undoHabitTimer = null;
+			api('/api/habits/' + habit.id, { method: 'DELETE' }).catch(fail);
+			root.innerHTML = '';
+		}, 5000);
 	}
 
 	function habitModal(habit) {
