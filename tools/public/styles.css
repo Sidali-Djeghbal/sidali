@@ -1478,7 +1478,7 @@ html.dark .bm-card:hover {
 	align-items: center;
 	gap: 0.5rem;
 	flex-wrap: wrap;
-	padding: 0 1.25rem 1.1rem;
+	padding: 0.85rem 1.25rem 1rem;
 	border-top: 1px solid var(--card-border);
 }
 
@@ -1499,9 +1499,8 @@ html.dark .bm-card:hover {
 	min-width: 8.5rem;
 }
 
-.ql-pages,
-.ql-minutes {
-	width: 4.5rem;
+.ql-pages {
+	width: 5rem;
 }
 
 @media (max-width: 560px) {

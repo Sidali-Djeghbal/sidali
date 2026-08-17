@@ -1446,7 +1446,6 @@
 							'<label class="ql-label">Log reading</label>' +
 							'<input class="input ql-day" type="date" max="' + today + '" value="' + today + '" aria-label="Date" />' +
 							'<input class="input ql-pages" type="number" min="0" max="100000" placeholder="Pages" aria-label="Pages read" />' +
-							'<input class="input ql-minutes" type="number" min="0" max="100000" placeholder="Min" aria-label="Minutes" />' +
 							'<button class="btn small primary" type="submit">Log</button>' +
 							'</form>'
 						: '') +
@@ -1539,10 +1538,10 @@
 			var body = {
 				day: form.querySelector('.ql-day').value || todayStr(),
 				pages: Number(form.querySelector('.ql-pages').value) || 0,
-				minutes: Number(form.querySelector('.ql-minutes').value) || 0,
+				minutes: 0,
 			};
-			if (!body.pages && !body.minutes) {
-				toast('Enter pages or minutes');
+			if (!body.pages) {
+				toast('Enter pages read');
 				return;
 			}
 			api('/api/books/' + book.id + '/sessions', { method: 'POST', body: body })
