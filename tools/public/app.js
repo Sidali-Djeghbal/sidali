@@ -1568,12 +1568,8 @@
 			'<option value="reading"' + (book && book.status === 'reading' ? ' selected' : '') + '>Reading</option>' +
 			'<option value="finished"' + (book && book.status === 'finished' ? ' selected' : '') + '>Finished</option>' +
 			'</select></div>' +
-			'<div class="field-row">' +
 			'<div class="field"><label for="book-total">Total pages</label>' +
 			'<input id="book-total" class="input" name="total_pages" type="number" min="0" max="10000000" value="' + (book ? book.total_pages || 0 : 0) + '" /></div>' +
-			'<div class="field"><label for="book-cur">Current page</label>' +
-			'<input id="book-cur" class="input" name="current_page" type="number" min="0" max="10000000" value="' + (book ? book.current_page || 0 : 0) + '" /></div>' +
-			'</div>' +
 			'<div class="field"><label for="book-started">Started reading</label>' +
 			'<input id="book-started" class="input" name="started_at" type="date" value="' + (book && book.started_at ? iso(new Date(book.started_at)) : '') + '" /></div>' +
 			'<div class="field"><label for="book-link">Book link (PDF, optional)</label>' +
@@ -1593,7 +1589,6 @@
 				author: overlay.querySelector('#book-author').value.trim(),
 				status: overlay.querySelector('#book-status').value,
 				total_pages: Number(overlay.querySelector('#book-total').value) || 0,
-				current_page: Number(overlay.querySelector('#book-cur').value) || 0,
 				started_at: started ? new Date(started + 'T12:00:00').getTime() : null,
 				link: overlay.querySelector('#book-link').value.trim(),
 				notes: overlay.querySelector('#book-notes').value,

@@ -832,11 +832,28 @@ async function handleBookSessions(request, db, bookId, sessionId) {
 			.prepare('INSERT INTO book_sessions (id, book_id, day, pages, minutes, created_at) VALUES (?, ?, ?, ?, ?, ?)')
 			.bind(session.id, session.book_id, session.day, session.pages, session.minutes, session.created_at)
 			.run();
+		await syncBookCurrentPage(db, bookId);
 		return json(session, 201);
 	}
 	if (request.method === 'DELETE' && sessionId) {
 		await db.prepare('DELETE FROM book_sessions WHERE id = ?').bind(sessionId).run();
+		await syncBookCurrentPage(db, bookId);
 		return json({ ok: true });
 	}
 	return json({ error: 'method not allowed' }, 405);
+}
+
+async function syncBookCurrentPage(db, bookId) {
+	const { results } = await db
+		.prepare('SELECT COALESCE(SUM(pages), 0) AS total FROM book_sessions WHERE book_id = ?')
+		.bind(bookId)
+		.all();
+	const totalRead = results[0]?.total || 0;
+	const book = await getById(db, 'books', bookId);
+	if (!book) return;
+	const newProgress = computedProgress(book.status, book.total_pages, totalRead, book.progress);
+	await db
+		.prepare('UPDATE books SET current_page = ?, progress = ?, updated_at = ? WHERE id = ?')
+		.bind(totalRead, newProgress, Date.now(), bookId)
+		.run();
 }
