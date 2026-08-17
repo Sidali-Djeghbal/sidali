@@ -1421,13 +1421,13 @@
 				return (
 					'<div class="book-item">' +
 					'<div class="book-row" data-id="' + esc(b.id) + '">' +
-					'<div class="book-main"><span class="book-title">' + esc(b.title) + '</span>' +
+					'<div class="book-main">' +
+					'<span class="book-title">' + esc(b.title) + '</span>' +
+					(b.author ? '<span class="book-author">' + esc(b.author) + '</span>' : '') +
 					'<span class="book-meta">' +
-					(b.author ? esc(b.author) : '') +
-					(b.author ? ' · ' : '') +
 					'<span class="status-chip ' + b.status + '">' + BOOK_STATUS_LABEL[b.status] + '</span>' +
-					(b.started_at ? ' · started ' + esc(fmtDate(b.started_at)) : '') +
-					(b.finished_at ? ' · finished ' + esc(fmtDate(b.finished_at)) : '') +
+					(b.started_at ? '<span>Started ' + esc(fmtDate(b.started_at)) + '</span>' : '') +
+					(b.finished_at ? '<span>Finished ' + esc(fmtDate(b.finished_at)) + '</span>' : '') +
 					'</span></div>' +
 					'<div class="book-side">' +
 					(b.link
