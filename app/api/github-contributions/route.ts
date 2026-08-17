@@ -81,6 +81,7 @@ export async function GET(request: Request) {
 			headers: {
 				authorization: `bearer ${token}`,
 				'content-type': 'application/json',
+				'user-agent': 'sidali-portfolio',
 			},
 			body: JSON.stringify({
 				query,
@@ -88,18 +89,29 @@ export async function GET(request: Request) {
 			}),
 		});
 
-		const payload = (await response.json()) as GithubResponse & {
+		const text = await response.text();
+
+		if (!response.ok) {
+			return NextResponse.json(
+				{
+					error: `GitHub API responded with ${response.status}`,
+					status: response.status,
+					detail: text.substring(0, 200),
+				},
+				{ status: 502 },
+			);
+		}
+
+		const payload = JSON.parse(text) as GithubResponse & {
 			errors?: { message: string }[];
 		};
 
-		if (!response.ok || payload.errors) {
+		if (payload.errors) {
 			return NextResponse.json(
 				{
-					error:
-						payload.errors?.[0]?.message ??
-						`GitHub API responded with ${response.status}`,
+					error: payload.errors?.[0]?.message ?? 'GraphQL error',
 				},
-				{ status: response.status >= 500 ? response.status : 502 },
+				{ status: 502 },
 			);
 		}
 
@@ -112,9 +124,10 @@ export async function GET(request: Request) {
 				},
 			},
 		);
-	} catch {
+	} catch (e: unknown) {
+		const detail = e instanceof Error ? e.message : String(e);
 		return NextResponse.json(
-			{ error: 'Failed to fetch contributions' },
+			{ error: 'Failed to fetch contributions', detail },
 			{ status: 502 },
 		);
 	}
