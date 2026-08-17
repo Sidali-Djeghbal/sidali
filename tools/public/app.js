@@ -1632,7 +1632,7 @@
 			links: [
 				{
 					name: 'Render',
-					url: 'https://dashboard.render.com/web/srv-da0d3dtbedkc73agihvg',
+					url: 'https://dashboard.render.com/',
 					desc: 'Docmost service — logs, env vars, redeploys',
 					logo: ICON_CDN + '/render/664DE5',
 				},
