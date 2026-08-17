@@ -194,7 +194,7 @@ h1 {
 /* --- Layout ------------------------------------------------------ */
 
 .page {
-	max-width: 56rem;
+	max-width: 80rem;
 	margin: 0 auto;
 	padding: 0 1.5rem;
 }
@@ -896,7 +896,7 @@ html.dark .task-card:hover {
 
 .board {
 	display: grid;
-	grid-template-columns: 2fr 2fr 1.3fr;
+	grid-template-columns: 2fr 2.5fr 2fr;
 	gap: 1rem;
 	padding-bottom: 3rem;
 	align-items: start;
