@@ -686,7 +686,10 @@
 			} else if (action === 'edit' && bm) {
 				bookmarkModal(bm);
 			} else if (action === 'delete' && bm) {
-				undoDeleteBookmark(bm, btn);
+				state.bookmarks = state.bookmarks.filter(function (b) { return b.id !== bm.id; });
+				rerender(true);
+				api('/api/bookmarks/' + bm.id, { method: 'DELETE' }).catch(fail);
+				toast('Link deleted');
 			}
 		};
 
@@ -696,29 +699,6 @@
 				rerender(true);
 			}
 		};
-	}
-
-	var _undoBmTimer = null;
-	function undoDeleteBookmark(bm, btn) {
-		if (_undoBmTimer) { clearTimeout(_undoBmTimer); _undoBmTimer = null; }
-		var snapshot = JSON.parse(JSON.stringify(state.bookmarks));
-		state.bookmarks = state.bookmarks.filter(function (b) { return b.id !== bm.id; });
-		rerender(true);
-		var root = $('#toast-root');
-		root.innerHTML = '<div class="toast undo-toast">Link deleted<button class="btn small" id="undo-bm-btn">Undo</button></div>';
-		var undoBtn = root.querySelector('#undo-bm-btn');
-		if (undoBtn) undoBtn.onclick = function () {
-			clearTimeout(_undoBmTimer);
-			_undoBmTimer = null;
-			state.bookmarks = snapshot;
-			rerender(true);
-			toast('Restored');
-		};
-		_undoBmTimer = setTimeout(function () {
-			_undoBmTimer = null;
-			api('/api/bookmarks/' + bm.id, { method: 'DELETE' }).catch(fail);
-			root.innerHTML = '';
-		}, 5000);
 	}
 
 	function bookmarkModal(bm) {
@@ -875,7 +855,10 @@
 			} else if (action === 'edit' && task) {
 				taskModal(task);
 			} else if (action === 'delete' && task) {
-				undoDeleteTask(task, btn);
+				state.tasks = state.tasks.filter(function (t) { return t.id !== task.id; });
+				rerender(true);
+				api('/api/tasks/' + task.id, { method: 'DELETE' }).catch(fail);
+				toast('Task deleted');
 			}
 		};
 
@@ -929,29 +912,6 @@
 			method: 'PUT',
 			body: { status: status, position: task.position },
 		}).catch(fail);
-	}
-
-	var _undoTimer = null;
-	function undoDeleteTask(task, btn) {
-		if (_undoTimer) { clearTimeout(_undoTimer); _undoTimer = null; }
-		var snapshot = JSON.parse(JSON.stringify(state.tasks));
-		state.tasks = state.tasks.filter(function (t) { return t.id !== task.id; });
-		rerender(true);
-		var root = $('#toast-root');
-		root.innerHTML = '<div class="toast undo-toast">Task deleted<button class="btn small" id="undo-btn">Undo</button></div>';
-		var undoBtn = root.querySelector('#undo-btn');
-		if (undoBtn) undoBtn.onclick = function () {
-			clearTimeout(_undoTimer);
-			_undoTimer = null;
-			state.tasks = snapshot;
-			rerender(true);
-			toast('Restored');
-		};
-		_undoTimer = setTimeout(function () {
-			_undoTimer = null;
-			api('/api/tasks/' + task.id, { method: 'DELETE' }).catch(fail);
-			root.innerHTML = '';
-		}, 5000);
 	}
 
 	function enableSwipe(board) {
@@ -1202,7 +1162,10 @@
 			} else if (action === 'edit' && habit) {
 				habitModal(habit);
 			} else if (action === 'delete' && habit) {
-				undoDeleteHabit(habit, btn);
+				state.habits = state.habits.filter(function (h) { return h.id !== habit.id; });
+				rerender(true);
+				api('/api/habits/' + habit.id, { method: 'DELETE' }).catch(fail);
+				toast('Habit deleted');
 			}
 		};
 	}
@@ -1219,29 +1182,6 @@
 				rerender(true);
 			})
 			.catch(fail);
-	}
-
-	var _undoHabitTimer = null;
-	function undoDeleteHabit(habit, btn) {
-		if (_undoHabitTimer) { clearTimeout(_undoHabitTimer); _undoHabitTimer = null; }
-		var snapshot = JSON.parse(JSON.stringify(state.habits));
-		state.habits = state.habits.filter(function (h) { return h.id !== habit.id; });
-		rerender(true);
-		var root = $('#toast-root');
-		root.innerHTML = '<div class="toast undo-toast">Habit deleted<button class="btn small" id="undo-habit-btn">Undo</button></div>';
-		var undoBtn = root.querySelector('#undo-habit-btn');
-		if (undoBtn) undoBtn.onclick = function () {
-			clearTimeout(_undoHabitTimer);
-			_undoHabitTimer = null;
-			state.habits = snapshot;
-			rerender(true);
-			toast('Restored');
-		};
-		_undoHabitTimer = setTimeout(function () {
-			_undoHabitTimer = null;
-			api('/api/habits/' + habit.id, { method: 'DELETE' }).catch(fail);
-			root.innerHTML = '';
-		}, 5000);
 	}
 
 	function habitModal(habit) {

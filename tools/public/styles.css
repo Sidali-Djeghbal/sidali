@@ -1086,15 +1086,6 @@ html.dark .bm-card:hover {
 	animation: check-pop 0.3s ease;
 }
 
-.undo-toast {
-	display: flex;
-	align-items: center;
-	gap: 0.75rem;
-}
-
-.undo-toast .btn {
-	margin-left: auto;
-}
 
 .composer {
 	display: flex;
