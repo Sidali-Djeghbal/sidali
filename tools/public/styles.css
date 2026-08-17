@@ -199,10 +199,7 @@ h1 {
 	padding: 0 1.5rem;
 }
 
-.page:has(.board),
-.page:has(.infra-group) {
-	max-width: 80rem;
-}
+
 
 header.page {
 	padding-top: 6rem;
