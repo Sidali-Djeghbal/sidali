@@ -2,6 +2,7 @@ import Analytics from 'app/components/analytics/analytics';
 import LenisProvider from 'app/components/providers/LenisProvider';
 import ThemeProvider from 'app/components/providers/ThemeProvider';
 import type { Metadata } from 'next';
+import Script from 'next/script';
 import type { ReactNode } from 'react';
 import ThemeSwitch from './components/layouts/theme-switch/theme-switch';
 import JsonLd from './components/seo/json-ld';
@@ -115,8 +116,41 @@ export default function RootLayout({ children }: RootLayoutProps) {
 			<head>
 				<meta name='msapplication-TileColor' content='#000000' />
 				<meta name='theme-color' content='#000000' />
+				<Script
+					id='gtm-script'
+					strategy='afterInteractive'
+					// biome-ignore lint/security/noDangerouslySetInnerHtml: Third-party analytics
+					dangerouslySetInnerHTML={{
+						__html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-58JSZ9S4');`,
+					}}
+				/>
+				<Script
+					async
+					src='https://www.googletagmanager.com/gtag/js?id=G-W5DR5CRNJK'
+					strategy='afterInteractive'
+				/>
+				<Script
+					id='gtag-config'
+					strategy='afterInteractive'
+					// biome-ignore lint/security/noDangerouslySetInnerHtml: Third-party analytics config
+					dangerouslySetInnerHTML={{
+						__html: `window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-W5DR5CRNJK');`,
+					}}
+				/>
 			</head>
 			<body className='bg-white text-black antialiased dark:bg-black dark:text-white selection:bg-primary-500 selection:text-white dark:selection:text-black'>
+				<noscript>
+					<iframe
+						src='https://www.googletagmanager.com/ns.html?id=GTM-58JSZ9S4'
+						height='0'
+						width='0'
+						style={{ display: 'none', visibility: 'hidden' }}
+						title='Google Tag Manager'
+					/>
+				</noscript>
 				<ThemeProvider
 					attribute='class'
 					defaultTheme='dark'
