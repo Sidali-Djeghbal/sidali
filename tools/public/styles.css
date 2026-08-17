@@ -900,8 +900,6 @@ html.dark .task-card:hover {
 	gap: 1rem;
 	padding-bottom: 3rem;
 	align-items: start;
-	max-width: 1100px;
-	margin: 0 auto;
 }
 
 .board-stats {
@@ -995,6 +993,7 @@ html.dark .task-card:hover {
 	display: flex;
 	align-items: flex-start;
 	gap: 0.65rem;
+	position: relative;
 }
 
 .task-title {
@@ -1015,9 +1014,15 @@ html.dark .task-card:hover {
 	display: flex;
 	justify-content: flex-end;
 	gap: 0.15rem;
-	margin-top: -0.2rem;
+	position: absolute;
+	right: 0;
+	top: -0.15rem;
 	opacity: 0;
 	transition: opacity 0.15s ease;
+	background: var(--bg);
+	border-radius: var(--radius-sm);
+	padding: 0.1rem 0.15rem;
+	z-index: 1;
 }
 
 .task-card:hover .task-actions {
