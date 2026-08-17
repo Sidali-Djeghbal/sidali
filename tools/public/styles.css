@@ -1834,26 +1834,32 @@ html.dark .infra-card:hover {
 
 /* --- Responsive --------------------------------------------------------------- */
 
+/* Kill any page-level overflow before breakpoints */
+html,
+body {
+	overflow-x: hidden;
+}
+
 /* --- Mobile (≤ 720px) ------------------------------------------- */
 
 @media (max-width: 720px) {
 	/* Page layout */
 	.page {
-		padding: 0 1rem;
+		padding: 0 0.85rem;
 	}
 
 	header.page {
-		padding-top: 5rem;
+		padding-top: 4.5rem;
 	}
 
-	/* Topbar */
+	/* Topbar — match page padding */
 	.topbar-inner {
-		padding: 0.5rem 1rem;
-		min-height: 3.2rem;
+		padding: 0.45rem 0.85rem;
+		min-height: 3rem;
 	}
 
 	.topbar-actions {
-		gap: 0.5rem;
+		gap: 0.4rem;
 	}
 
 	/* Touch targets — minimum 44px */
@@ -1863,13 +1869,13 @@ html.dark .infra-card:hover {
 	}
 
 	.btn.small {
-		padding: 0.45rem 0.9rem;
+		padding: 0.4rem 0.8rem;
 		min-height: 2.5rem;
 	}
 
 	.check {
-		width: 1.75rem;
-		height: 1.75rem;
+		width: 1.65rem;
+		height: 1.65rem;
 	}
 
 	/* Task actions — always visible on touch (no hover) */
@@ -1880,7 +1886,7 @@ html.dark .infra-card:hover {
 		opacity: 1;
 		background: transparent;
 		padding: 0;
-		margin-top: 0.3rem;
+		margin-top: 0.25rem;
 	}
 
 	.task-card:hover .task-actions {
@@ -1893,49 +1899,143 @@ html.dark .infra-card:hover {
 		max-width: none;
 	}
 
+	.kanban-col {
+		padding: 0.65rem;
+		min-height: 5rem;
+	}
+
+	.kanban-cards {
+		gap: 0.45rem;
+	}
+
+	.task-card {
+		padding: 0.65rem 0.75rem;
+		gap: 0.35rem;
+	}
+
+	.task-title {
+		font-size: 0.9rem;
+	}
+
+	.task-meta {
+		padding-left: 1.6rem;
+		font-size: 0.78rem;
+	}
+
 	/* Launcher */
 	.launcher-grid {
 		grid-template-columns: 1fr 1fr;
-		gap: 0.85rem;
+		gap: 0.6rem;
+	}
+
+	.launcher-hero {
+		gap: 0.75rem;
+	}
+
+	.launcher-hero h1 {
+		font-size: clamp(1.5rem, 6vw, 2rem);
 	}
 
 	.launcher-card {
-		padding: 1.1rem;
+		padding: 0.85rem;
 	}
 
 	.bento-card {
-		padding: 1.15rem;
+		padding: 0.9rem;
+		gap: 0.6rem;
 	}
 
 	.bento-stats {
-		gap: 1rem;
+		gap: 0.75rem;
+	}
+
+	.bento-num {
+		font-size: 1.4rem;
+	}
+
+	.bento-current-title {
+		font-size: 1.1rem;
+	}
+
+	.bento-featured {
+		grid-column: span 2;
 	}
 
 	/* Bookmarks */
 	.bm-grid {
 		grid-template-columns: 1fr 1fr;
-		gap: 0.75rem;
+		gap: 0.5rem;
+	}
+
+	.bm-main {
+		padding: 0.7rem;
+		gap: 0.6rem;
+	}
+
+	.bm-icon {
+		width: 2rem;
+		height: 2rem;
+		font-size: 0.95rem;
+	}
+
+	.bm-title {
+		font-size: 0.85rem;
+	}
+
+	.bm-host {
+		font-size: 0.72rem;
 	}
 
 	.bm-actions {
-		gap: 0.25rem;
-		padding: 0 0.25rem 0.25rem;
+		gap: 0.15rem;
+		padding: 0 0.2rem 0.2rem;
 	}
 
 	.progress-wrap {
 		width: 100%;
-		max-width: 8rem;
+		max-width: 6rem;
+	}
+
+	.bm-search {
+		max-width: none;
 	}
 
 	/* Habits */
+	.habit-card {
+		padding: 0.85rem;
+		gap: 0.75rem;
+	}
+
+	.habit-head {
+		gap: 0.5rem;
+	}
+
+	.habit-name {
+		font-size: 1rem;
+		min-width: 5rem;
+	}
+
+	.habit-streak {
+		font-size: 0.78rem;
+		padding: 0.15rem 0.55rem;
+	}
+
+	.habit-rate {
+		font-size: 0.72rem;
+		padding: 0.15rem 0.5rem;
+	}
+
+	.habit-body {
+		gap: 0.75rem;
+	}
+
 	.hm-cell {
-		width: 18px;
-		height: 18px;
+		width: 14px;
+		height: 14px;
 	}
 
 	.habit-heat {
 		overflow-x: auto;
-		-webkit-overflow-scrolling: touch;
 		max-width: 100%;
 	}
 
@@ -1948,21 +2048,28 @@ html.dark .infra-card:hover {
 	}
 
 	.hm-month {
-		font-size: 0.6rem;
+		font-size: 0.55rem;
 		overflow: hidden;
 	}
 
 	.today-toggle {
-		min-height: 2.75rem;
+		min-height: 2.5rem;
 		flex: 1 1 100%;
 		justify-content: center;
+		padding: 0.5rem 0.75rem;
 	}
 
 	/* Quick-log */
 	.quick-log {
 		flex-direction: column;
 		align-items: stretch;
-		padding: 0.75rem 1rem 1rem;
+		padding: 0.6rem 0.85rem 0.85rem;
+		gap: 0.4rem;
+	}
+
+	.ql-label {
+		font-size: 0.72rem;
+		margin-right: 0;
 	}
 
 	.ql-day {
@@ -1975,46 +2082,79 @@ html.dark .infra-card:hover {
 		flex: 1;
 	}
 
-	.ql-pages,
-	.ql-minutes {
+	.ql-pages {
 		width: 100%;
 	}
 
 	/* Books */
+	.book-list {
+		gap: 0.5rem;
+	}
+
 	.book-row {
 		flex-wrap: wrap;
+		padding: 0.85rem 1rem;
+		gap: 0.6rem;
+	}
+
+	.book-main {
+		gap: 0.35rem;
+	}
+
+	.book-title {
+		font-size: 0.95rem;
+	}
+
+	.book-meta {
+		font-size: 0.78rem;
+		gap: 0.35rem;
 	}
 
 	.book-side {
 		width: 100%;
 		justify-content: space-between;
+		gap: 0.5rem;
 	}
 
 	.book-detail {
 		grid-template-columns: 1fr;
+		padding: 0.75rem 1rem 1rem;
+		gap: 0.75rem;
 	}
 
 	/* Infra */
+	.infra-group {
+		padding: 0 0 1rem;
+	}
+
 	.infra-card {
-		padding: 0.9rem 1rem;
+		padding: 0.7rem 0.85rem;
+	}
+
+	.infra-grid {
+		gap: 0.45rem;
+	}
+
+	.infra-desc {
+		font-size: 0.78rem;
 	}
 
 	/* Modal */
 	.modal-overlay {
-		padding: 1rem;
+		padding: 0.75rem;
 	}
 
 	.modal {
-		padding: 1.25rem;
+		padding: 1rem;
 	}
 
 	.modal-head {
-		padding-bottom: 0.75rem;
+		padding-bottom: 0.6rem;
 	}
 
 	.modal-foot {
 		flex-direction: column;
-		gap: 0.5rem;
+		gap: 0.4rem;
 	}
 
 	.modal-foot .btn {
@@ -2028,55 +2168,84 @@ html.dark .infra-card:hover {
 
 	/* Empty state */
 	.empty {
-		padding: 2rem 1rem;
-		margin-bottom: 2rem;
+		padding: 1.5rem 0.85rem;
+		margin-bottom: 1.5rem;
 	}
 
 	/* Filter chips */
+	.filter-row {
+		padding-bottom: 0.85rem;
+		gap: 0.35rem;
+	}
+
 	.chip {
-		padding: 0.4rem 1rem;
-		min-height: 2.5rem;
+		padding: 0.3rem 0.75rem;
+		min-height: 2.25rem;
+		font-size: 0.82rem;
 	}
 
 	/* Stat strip */
 	.stat-strip {
+		gap: 0.4rem;
+		padding-bottom: 1rem;
+	}
+
+	.stat-cell {
+		padding: 0.6rem 0.75rem;
+	}
+
+	.stat-num {
+		font-size: 1.25rem;
+	}
+
+	.stat-label {
+		font-size: 0.7rem;
+	}
+
+	/* View head */
+	.view-head {
+		padding-bottom: 1rem;
 		gap: 0.5rem;
 	}
 
-	/* Infra groups */
-	.infra-group {
-		padding: 0 0 1.5rem;
+	.view-head h1 {
+		font-size: clamp(1.2rem, 5vw, 1.6rem);
+		margin-bottom: 0.2rem;
 	}
 
-	.infra-grid {
-		gap: 0.6rem;
+	.view-head .subtitle {
+		font-size: 0.85rem;
 	}
 
 	/* Login card */
 	.login-card {
-		padding: 1.5rem;
-		margin: 0 1rem;
+		padding: 1.25rem;
+		margin: 0 0.85rem;
 	}
 
 	/* Font size floors for readability */
 	.status-chip {
-		font-size: 0.78rem;
-	}
-
-	.stat-label {
-		font-size: 0.8rem;
+		font-size: 0.72rem;
+		padding: 0.1rem 0.5rem;
 	}
 
 	/* Ensure touch-friendly form inputs */
 	.input,
 	select.input,
 	textarea.input {
-		min-height: 2.75rem;
+		min-height: 2.65rem;
 		font-size: 16px;
 	}
 
 	textarea.input {
-		min-height: 6rem;
+		min-height: 5rem;
+	}
+
+	/* Section spacing */
+	.book-list,
+	.habit-list,
+	.board {
+		padding-bottom: 2rem;
 	}
 }
 
@@ -2084,12 +2253,16 @@ html.dark .infra-card:hover {
 
 @media (max-width: 400px) {
 	.page {
-		padding: 0 0.75rem;
+		padding: 0 0.65rem;
 	}
 
 	.topbar-inner {
-		padding: 0.5rem 0.75rem;
-		gap: 0.5rem;
+		padding: 0.4rem 0.65rem;
+		gap: 0.4rem;
+	}
+
+	.topbar-title {
+		font-size: 0.9rem;
 	}
 
 	/* Single column grids */
@@ -2101,21 +2274,37 @@ html.dark .infra-card:hover {
 		grid-template-columns: 1fr;
 	}
 
-	/* Reduce spacing */
+	.launcher-hero h1 {
+		font-size: 1.35rem;
+	}
+
+	/* Reduce spacing further */
 	.view-head {
-		padding-bottom: 1rem;
+		padding-bottom: 0.75rem;
+	}
+
+	.view-head h1 {
+		font-size: 1.1rem;
 	}
 
 	.bento-card {
-		padding: 1rem;
+		padding: 0.75rem;
+	}
+
+	.bento-featured {
+		grid-column: span 1;
 	}
 
 	.habit-card {
-		padding: 1rem;
+		padding: 0.7rem;
 	}
 
-	.book-item {
-		padding: 0.85rem 1rem;
+	.book-row {
+		padding: 0.7rem 0.85rem;
+	}
+
+	.book-side {
+		gap: 0.35rem;
 	}
 
 	/* Infra cards single column */
@@ -2123,17 +2312,38 @@ html.dark .infra-card:hover {
 		min-width: 0;
 	}
 
+	.kanban-col {
+		padding: 0.5rem;
+		min-height: 4rem;
+	}
+
+	.task-card {
+		padding: 0.55rem 0.65rem;
+	}
+
 	/* Modal gets full width */
 	.modal-overlay {
-		padding: 0.5rem;
+		padding: 0;
 		align-items: flex-end;
 	}
 
 	.modal {
-		padding: 1rem;
+		padding: 0.85rem;
 		border-radius: var(--radius) var(--radius) 0 0;
 		max-height: 90vh;
 		overflow-y: auto;
+	}
+
+	.stat-strip {
+		grid-template-columns: 1fr 1fr;
+	}
+
+	.stat-cell {
+		padding: 0.5rem 0.65rem;
+	}
+
+	.stat-num {
+		font-size: 1.1rem;
 	}
 }
 
