@@ -599,14 +599,24 @@
 	}
 
 	function renderStart() {
-		var cards = state.bookmarks
+		var query = '';
+		var filtered = state.bookmarks;
+		if (state._bmSearch) {
+			var q = state._bmSearch.toLowerCase();
+			filtered = state.bookmarks.filter(function (bm) {
+				return bm.title.toLowerCase().indexOf(q) !== -1 || hostOf(bm.url).toLowerCase().indexOf(q) !== -1;
+			});
+		}
+		var cards = filtered
 			.map(function (bm) {
+				var host = hostOf(bm.url);
+				var domain = host.replace(/^www\./, '');
 				return (
 					'<div class="bm-card" draggable="true" data-id="' + esc(bm.id) + '">' +
 					'<a class="bm-main" href="' + esc(bm.url) + '" target="_blank" rel="noreferrer">' +
-					'<span class="bm-icon">' + esc((bm.title || '?').trim().charAt(0).toUpperCase()) + '</span>' +
+					'<span class="bm-icon"><img src="https://www.google.com/s2/favicons?domain=' + esc(domain) + '&sz=32" alt="" width="20" height="20" loading="lazy" onerror="this.style.display=\'none\';this.nextElementSibling.style.visibility=\'visible\'" /><span class="bm-icon-fallback">' + esc((bm.title || '?').trim().charAt(0).toUpperCase()) + '</span></span>' +
 					'<span class="bm-body"><span class="bm-title">' + esc(bm.title) + '</span>' +
-					'<span class="bm-host">' + esc(hostOf(bm.url)) + '</span></span></a>' +
+					'<span class="bm-host">' + esc(host) + '</span></span></a>' +
 					'<div class="bm-actions">' +
 					'<button class="icon-btn" type="button" data-action="edit" aria-label="Edit link" title="Edit">' + I.pencil + '</button>' +
 					'<button class="icon-btn" type="button" data-action="delete" aria-label="Delete" title="Delete">' + I.trash + '</button>' +
@@ -615,13 +625,19 @@
 			})
 			.join('');
 
+		var total = state.bookmarks.length;
+		var statsHtml = total
+			? '<p class="board-stats">' + total + (total === 1 ? ' link' : ' links') + '</p>'
+			: '';
+
 		view.innerHTML =
 			'<header class="page"><div class="view-head"><div><p class="kicker">Start</p>' +
-			'<h1>Quick links.</h1><p class="subtitle">Your launcher — open, add, reorder.</p></div>' +
+			'<h1>Quick links.</h1><p class="subtitle">Your quick-access dashboard.</p>' +
+			statsHtml + '</div>' +
 			'<button class="btn primary" type="button" data-action="add">' + I.plus + 'Add link</button></div></header>' +
 			'<main class="page">' +
-			(state.bookmarks.length
-				? '<div class="bm-grid drop-zone">' + cards + '</div>'
+			(total
+				? '<div class="bm-search-wrap"><input class="input bm-search" type="text" placeholder="Search links…" value="' + esc(state._bmSearch || '') + '" data-bm-search /></div><div class="bm-grid drop-zone">' + cards + '</div>'
 				: '<div class="empty">' + I.compass + '<p class="empty-title">No links yet</p>' +
 					'<p>Add your first bookmark to build your start page.</p></div>') +
 			'</main>';
@@ -645,7 +661,20 @@
 			);
 		}
 
+		var searchInput = view.querySelector('[data-bm-search]');
+		if (searchInput) {
+			searchInput.focus();
+			searchInput.setSelectionRange(searchInput.value.length, searchInput.value.length);
+		}
+
 		view.onclick = function (e) {
+			if (e.target.closest('[data-bm-search]')) return;
+			var searchEl = view.querySelector('[data-bm-search]');
+			if (searchEl && searchEl.value !== (state._bmSearch || '')) {
+				state._bmSearch = searchEl.value.trim();
+				rerender(true);
+				return;
+			}
 			var btn = e.target.closest('[data-action]');
 			if (!btn) return;
 			var action = btn.dataset.action;
@@ -657,19 +686,39 @@
 			} else if (action === 'edit' && bm) {
 				bookmarkModal(bm);
 			} else if (action === 'delete' && bm) {
-				armDelete(btn, function () {
-					api('/api/bookmarks/' + bm.id, { method: 'DELETE' })
-						.then(function () {
-							state.bookmarks = state.bookmarks.filter(function (b) {
-								return b.id !== bm.id;
-							});
-							toast('Link deleted');
-							rerender(true);
-						})
-						.catch(fail);
-				});
+				undoDeleteBookmark(bm, btn);
 			}
 		};
+
+		view.oninput = function (e) {
+			if (e.target.matches('[data-bm-search]')) {
+				state._bmSearch = e.target.value.trim();
+				rerender(true);
+			}
+		};
+	}
+
+	var _undoBmTimer = null;
+	function undoDeleteBookmark(bm, btn) {
+		if (_undoBmTimer) { clearTimeout(_undoBmTimer); _undoBmTimer = null; }
+		var snapshot = JSON.parse(JSON.stringify(state.bookmarks));
+		state.bookmarks = state.bookmarks.filter(function (b) { return b.id !== bm.id; });
+		rerender(true);
+		var root = $('#toast-root');
+		root.innerHTML = '<div class="toast undo-toast">Link deleted<button class="btn small" id="undo-bm-btn">Undo</button></div>';
+		var undoBtn = root.querySelector('#undo-bm-btn');
+		if (undoBtn) undoBtn.onclick = function () {
+			clearTimeout(_undoBmTimer);
+			_undoBmTimer = null;
+			state.bookmarks = snapshot;
+			rerender(true);
+			toast('Restored');
+		};
+		_undoBmTimer = setTimeout(function () {
+			_undoBmTimer = null;
+			api('/api/bookmarks/' + bm.id, { method: 'DELETE' }).catch(fail);
+			root.innerHTML = '';
+		}, 5000);
 	}
 
 	function bookmarkModal(bm) {

@@ -835,11 +835,17 @@ html.dark .habit-card:hover {
 	backdrop-filter: blur(14px);
 	border-radius: var(--radius);
 	overflow: hidden;
-	transition: background-color 0.2s ease;
+	transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
 }
 
 .bm-card:hover {
 	background: var(--card-hover);
+	transform: translateY(-1px);
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+html.dark .bm-card:hover {
+	box-shadow: 0 4px 12px rgba(255, 255, 255, 0.06);
 }
 
 .bm-main {
@@ -865,11 +871,17 @@ html.dark .habit-card:hover {
 	font-size: 1.1rem;
 	color: var(--primary-500);
 	overflow: hidden;
+	position: relative;
 }
 
 .bm-icon img {
-	width: 1.3rem;
-	height: 1.3rem;
+	width: 20px;
+	height: 20px;
+	position: absolute;
+}
+
+.bm-icon-fallback {
+	visibility: hidden;
 }
 
 .bm-body {
@@ -892,6 +904,15 @@ html.dark .habit-card:hover {
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
+}
+
+.bm-search-wrap {
+	padding-bottom: 1rem;
+}
+
+.bm-search {
+	width: 100%;
+	max-width: 24rem;
 }
 
 .bm-actions {
