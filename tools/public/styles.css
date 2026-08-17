@@ -1551,6 +1551,9 @@ html.dark .bm-card:hover {
 
 .detail-heat {
 	align-self: center;
+	min-width: 0;
+	overflow-x: auto;
+	-webkit-overflow-scrolling: touch;
 }
 
 .detail-sessions {
