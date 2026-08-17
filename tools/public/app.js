@@ -1624,74 +1624,106 @@
 	 * Infra — dashboards & monitoring links
 	 * ================================================================ */
 
+	var ICON_CDN = 'https://cdn.simpleicons.org';
 	var INFRA_GROUPS = [
 		{
 			title: 'Hosting & data',
+			icon: 'server',
 			links: [
 				{
 					name: 'Render',
 					url: 'https://dashboard.render.com/web/srv-da0d3dtbedkc73agihvg',
 					desc: 'Docmost service — logs, env vars, redeploys',
+					logo: ICON_CDN + '/render/664DE5',
 				},
 				{
 					name: 'Supabase',
 					url: 'https://supabase.com/dashboard/project/jtqlbqlcocsudrkbquhm',
 					desc: 'Postgres for Docmost',
+					logo: ICON_CDN + '/supabase/3ECF8E',
 				},
 				{
 					name: 'Upstash',
 					url: 'https://console.upstash.com/redis/90401fa2-1ac3-40c0-82ae-3705eb06cc1c',
-					desc: 'Redis',
+					desc: 'Redis for rate-limiting & caching',
+					logo: ICON_CDN + '/upstash/00C7B7',
 				},
 				{
 					name: 'Cloudflare',
 					url: 'https://dash.cloudflare.com/0e8ab63bb93128b57f4f47ad32f95988/sidali-djeghbal.dev',
-					desc: 'DNS, R2 buckets, Workers',
+					desc: 'DNS, R2 buckets, Workers & Turnstile',
+					logo: ICON_CDN + '/cloudflare/F38020',
 				},
 			],
 		},
 		{
-			title: 'Monitoring',
+			title: 'Monitoring & analytics',
+			icon: 'chart',
 			links: [
 				{
 					name: 'LogRocket',
 					url: 'https://app.logrocket.com/8mej4y/portfolio/metrics/logrocket-analytics',
-					desc: 'Session replay & performance',
+					desc: 'Session replay & performance monitoring',
+					logo: ICON_CDN + '/rocket/764ABC',
 				},
 				{
 					name: 'Umami',
 					url: 'https://cloud.umami.is/analytics/eu/websites/ce2db398-dd36-458e-ada8-d6106f9b76c1',
 					desc: 'Privacy-friendly analytics',
+					logo: ICON_CDN + '/umami/291333',
+				},
+				{
+					name: 'Search Console',
+					url: 'https://search.google.com/search-console?resource_id=sc-domain%3Asidali-djeghbal.dev',
+					desc: 'SEO indexing, coverage & performance',
+					logo: ICON_CDN + '/google/4285F4',
+				},
+				{
+					name: 'PageSpeed Insights',
+					url: 'https://pagespeed.web.dev/',
+					desc: 'Core Web Vitals & Lighthouse scores',
+					logo: ICON_CDN + '/lighthouse/FF6D01',
 				},
 			],
 		},
 	];
 
 	function renderInfra() {
+		var total = infraLinkCount();
 		var sections = INFRA_GROUPS.map(function (group) {
+			var count = group.links.length;
 			var cards = group.links
 				.map(function (link) {
 					return (
 						'<a class="infra-card" href="' + esc(link.url) + '" target="_blank" rel="noreferrer">' +
+						'<img class="infra-logo" src="' + esc(link.logo) + '" alt="" width="28" height="28" loading="lazy" />' +
+						'<div class="infra-card-body">' +
 						'<span class="bm-title">' + esc(link.name) + '</span>' +
-						'<span class="bm-host">' + esc(hostOf(link.url)) + '</span>' +
 						'<span class="infra-desc">' + esc(link.desc) + '</span>' +
+						'<span class="bm-host">' + esc(hostOf(link.url)) + '</span>' +
+						'</div>' +
+						'<span class="infra-arrow">' + I.arrow + '</span>' +
 						'</a>'
 					);
 				})
 				.join('');
 			return (
 				'<section class="infra-group">' +
+				'<div class="infra-group-head">' +
 				'<h2 class="infra-title">' + esc(group.title) + '</h2>' +
+				'<span class="infra-badge">' + count + '</span>' +
+				'</div>' +
 				'<div class="infra-grid">' + cards + '</div>' +
 				'</section>'
 			);
 		}).join('');
 
 		view.innerHTML =
-			'<header class="page"><p class="kicker">Infra</p>' +
+			'<header class="page"><div class="view-head"><div><p class="kicker">Infra</p>' +
 			'<h1>Everything behind the sites.</h1>' +
-			'<p class="subtitle">Dashboards, data stores and monitoring in one place.</p></header>' +
+			'<p class="subtitle">Dashboards, data stores and monitoring in one place.</p>' +
+			'<p class="board-stats">' + total + ' dashboards · ' + INFRA_GROUPS.length + ' categories</p>' +
+			'</div></div></header>' +
 			'<main class="page">' + sections + '</main>';
 	}
 

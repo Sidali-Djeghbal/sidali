@@ -1527,39 +1527,97 @@ html.dark .habit-card:hover {
 	padding-bottom: 2rem;
 }
 
+.infra-group-head {
+	display: flex;
+	align-items: center;
+	gap: 0.6rem;
+	padding-bottom: 0.9rem;
+}
+
 .infra-title {
 	font-size: 1.05rem;
-	padding-bottom: 0.9rem;
+}
+
+.infra-badge {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 1.5rem;
+	height: 1.5rem;
+	font-size: 0.72rem;
+	font-weight: 600;
+	color: var(--muted);
+	background: var(--card);
+	border: 1px solid var(--card-border);
+	border-radius: 999px;
+	padding: 0 0.45rem;
 }
 
 .infra-grid {
 	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+	grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
 	gap: 0.9rem;
 	padding-bottom: 1rem;
 }
 
 .infra-card {
 	display: flex;
-	flex-direction: column;
-	gap: 0.2rem;
-	padding: 1.1rem 1.25rem;
+	align-items: center;
+	gap: 0.85rem;
+	padding: 1rem 1.15rem;
 	background: var(--card);
 	border: 1px solid var(--card-border);
 	border-radius: var(--radius-sm);
 	text-decoration: none;
-	transition: background-color 0.2s ease;
+	transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
 }
 
 .infra-card:hover {
 	background: var(--card-hover);
+	transform: translateY(-1px);
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+html.dark .infra-card:hover {
+	box-shadow: 0 4px 12px rgba(255, 255, 255, 0.06);
+}
+
+.infra-logo {
+	width: 28px;
+	height: 28px;
+	flex-shrink: 0;
+	border-radius: 6px;
+	background: var(--card);
+	object-fit: contain;
+}
+
+.infra-card-body {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 0.1rem;
+}
+
+.infra-arrow {
+	flex-shrink: 0;
+	width: 0.9rem;
+	height: 0.9rem;
+	color: var(--muted);
+	opacity: 0;
+	transform: translateX(-2px);
+	transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.infra-card:hover .infra-arrow {
+	opacity: 1;
+	transform: translateX(0);
 }
 
 .infra-desc {
 	font-size: 0.83rem;
 	color: var(--muted);
 	line-height: 1.35;
-	margin-top: 0.35rem;
 }
 
 /* --- Modal -------------------------------------------------------------- */
