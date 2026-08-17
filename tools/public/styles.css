@@ -896,10 +896,12 @@ html.dark .task-card:hover {
 
 .board {
 	display: grid;
-	grid-template-columns: repeat(3, 1fr);
+	grid-template-columns: 2fr 2fr 1.3fr;
 	gap: 1rem;
 	padding-bottom: 3rem;
 	align-items: start;
+	max-width: 1100px;
+	margin: 0 auto;
 }
 
 .board-stats {
@@ -955,7 +957,7 @@ html.dark .task-card:hover {
 	background: var(--card);
 	border: 1px solid var(--card-border);
 	border-radius: var(--radius-sm);
-	padding: 0.75rem 0.85rem;
+	padding: 0.85rem 1rem;
 	display: flex;
 	flex-direction: column;
 	gap: 0.5rem;
@@ -998,12 +1000,13 @@ html.dark .task-card:hover {
 .task-title {
 	flex: 1;
 	font-weight: 500;
-	line-height: 1.35;
+	font-size: 0.95rem;
+	line-height: 1.4;
 	overflow-wrap: anywhere;
 }
 
 .task-meta {
-	font-size: 0.78rem;
+	font-size: 0.82rem;
 	color: var(--muted);
 	padding-left: 2rem;
 }
@@ -1657,6 +1660,7 @@ html.dark .task-card:hover {
 
 	.board {
 		grid-template-columns: 1fr;
+		max-width: none;
 	}
 
 	.launcher-grid {
