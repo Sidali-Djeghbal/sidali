@@ -291,10 +291,6 @@
 
 	function setupTheme() {
 		var button = $('#theme-toggle');
-		var logoutBtn = $('#logout-btn');
-		var backBtn = $('#back-btn');
-		logoutBtn.innerHTML = I.lock;
-		backBtn.innerHTML = I.back;
 
 		function paint() {
 			var dark = document.documentElement.classList.contains('dark');
@@ -346,20 +342,20 @@
 
 	function setUserChip(user) {
 		var chip = $('#user-chip');
+		var dropdown = $('#user-dropdown');
+		var profile = $('#dropdown-profile');
 		if (!user || !user.login) {
 			chip.classList.add('hidden');
 			return;
 		}
 		chip.innerHTML =
-			'<img class="user-avatar" src="https://github.com/' +
+			'<img src="https://github.com/' +
 			encodeURIComponent(user.login) +
 			'.png?size=64" alt="' +
 			esc(user.login) +
-			'" />' +
-			'<span class="user-name">' +
-			esc(user.login) +
-			'</span>';
+			'" />';
 		chip.classList.remove('hidden');
+		profile.href = 'https://github.com/' + encodeURIComponent(user.login);
 	}
 
 	function wireLogin() {
@@ -378,6 +374,7 @@
 
 	function wireTopbar() {
 		$('#logout-btn').addEventListener('click', function () {
+			closeDropdown();
 			api('/api/logout', { method: 'POST', body: {} })
 				.catch(function () {})
 				.then(function () {
@@ -385,8 +382,24 @@
 					showLogin();
 				});
 		});
-		$('#back-btn').addEventListener('click', function () {
-			location.hash = '#/';
+		var chip = $('#user-chip');
+		var dropdown = $('#user-dropdown');
+		function closeDropdown() {
+			dropdown.classList.add('hidden');
+			chip.setAttribute('aria-expanded', 'false');
+		}
+		chip.addEventListener('click', function (e) {
+			e.stopPropagation();
+			var open = !dropdown.classList.contains('hidden');
+			if (open) {
+				closeDropdown();
+			} else {
+				dropdown.classList.remove('hidden');
+				chip.setAttribute('aria-expanded', 'true');
+			}
+		});
+		document.addEventListener('click', function (e) {
+			if (!e.target.closest('.user-menu')) closeDropdown();
 		});
 	}
 
@@ -411,7 +424,6 @@
 		}
 		var entry = ROUTES[name];
 		$('#topbar-title').textContent = entry.title;
-		$('#back-btn').style.visibility = name === '' ? 'hidden' : 'visible';
 		document.title = (name === '' ? 'Tools' : entry.title) + ' — Sidali DJEGHBAL';
 		view.innerHTML = '<p class="muted" style="padding:6rem 0 0">Loading…</p>';
 		window.scrollTo(0, 0);

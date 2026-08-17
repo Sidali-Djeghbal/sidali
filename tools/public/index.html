@@ -68,34 +68,36 @@
 		</div>
 
 		<div id="app-view" class="hidden">
-			<header class="topbar">
-				<div class="topbar-inner">
+		<header class="topbar">
+			<div class="topbar-inner">
+				<a id="topbar-logo" class="topbar-logo" href="#/" aria-label="Home">
+					<img src="/logo.svg" alt="Logo" width="24" height="24" />
+				</a>
+				<span id="topbar-title" class="topbar-title"></span>
+				<div class="topbar-actions">
 					<button
-						id="back-btn"
+						id="theme-toggle"
 						class="icon-btn"
 						type="button"
-						aria-label="Back to launcher"
+						aria-label="Toggle dark mode"
+						title="Toggle dark mode"
 					></button>
-					<span id="topbar-title" class="topbar-title"></span>
-					<div class="topbar-actions">
-						<span id="user-chip" class="user-chip hidden"></span>
+					<div class="user-menu">
 						<button
-							id="logout-btn"
-							class="icon-btn"
+							id="user-chip"
+							class="user-chip hidden"
 							type="button"
-							aria-label="Lock and sign out"
-							title="Lock"
+							aria-label="Account menu"
+							aria-expanded="false"
 						></button>
-						<button
-							id="theme-toggle"
-							class="icon-btn"
-							type="button"
-							aria-label="Toggle dark mode"
-							title="Toggle dark mode"
-						></button>
+						<div id="user-dropdown" class="user-dropdown hidden">
+							<a id="dropdown-profile" class="user-dropdown-item" href="#" target="_blank" rel="noreferrer">Profile</a>
+							<button id="logout-btn" class="user-dropdown-item" type="button">Sign out</button>
+						</div>
 					</div>
 				</div>
-			</header>
+			</div>
+		</header>
 			<main id="view"></main>
 		</div>
 
