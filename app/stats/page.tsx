@@ -1,12 +1,19 @@
+import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import GithubContributions from '../components/github-contributions/github-contributions';
 import Header from '../components/header';
 import WakaStats from '../components/wakatime/wakastats';
 import WakatimeSkeleton from '../components/wakatime/wakatime-skeleton';
 
-export const metadata = {
+const siteUrl = 'https://sidali-djeghbal.dev';
+
+export const metadata: Metadata = {
 	title: 'Stats',
-	description: 'My Stats - Sidali DJEGHBAL',
+	description:
+		'My GitHub contribution history, coding activity, and development stats powered by WakaTime and GitHub APIs.',
+	alternates: {
+		canonical: `${siteUrl}/stats`,
+	},
 };
 
 export default function StatsPage() {

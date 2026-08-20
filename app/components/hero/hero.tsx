@@ -30,18 +30,8 @@ export default function Hero() {
 							<p className='text-base text-justify'>
 								I&apos;m Sidali DJEGHBAL — an AI Engineering undergrad and
 								full-stack developer, I build accessible, scalable web platforms
-								that matter. Right now, I'm a Full-Stack Engineer at Algerian
-								Tech Makers, developing the official website and CMS for{' '}
-								<a
-									href='https://bunian.online'
-									className='underline-magical'
-									target='_blank'
-									rel='noreferrer'
-									data-skip-splash-cursor
-								>
-									Bunian
-								</a>
-								.
+								that matter. I build things that ship — fast, accessible, and
+								with purpose.
 							</p>
 						</section>
 						<section className='relative z-10 flex flex-col gap-6 items-start text-sm md:flex-row md:flex-wrap md:items-center'>

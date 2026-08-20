@@ -33,11 +33,14 @@ const query = `
 `;
 
 type GithubResponse = {
-	user: {
-		contributionsCollection: {
-			contributionCalendar: ContributionCalendar;
+	data: {
+		user: {
+			contributionsCollection: {
+				contributionCalendar: ContributionCalendar;
+			};
 		};
 	};
+	errors?: { message: string }[];
 };
 
 function getDateRange(year: number) {
@@ -61,7 +64,10 @@ export async function GET(request: Request) {
 	const year = Number(searchParams.get('year'));
 
 	if (!Number.isInteger(year) || year < 2000 || year > 2100) {
-		return NextResponse.json({ error: 'Invalid year' }, { status: 400 });
+		return NextResponse.json(
+			{ error: 'Invalid year' },
+			{ status: 400, headers: { 'X-Robots-Tag': 'noindex, nofollow' } },
+		);
 	}
 
 	const token = process.env.GITHUB_TOKEN;
@@ -69,7 +75,7 @@ export async function GET(request: Request) {
 	if (!token) {
 		return NextResponse.json(
 			{ error: 'GITHUB_TOKEN is not configured' },
-			{ status: 500 },
+			{ status: 500, headers: { 'X-Robots-Tag': 'noindex, nofollow' } },
 		);
 	}
 
@@ -93,34 +99,36 @@ export async function GET(request: Request) {
 
 		if (!response.ok) {
 			return NextResponse.json(
-				{
-					error: `GitHub API responded with ${response.status}`,
-					status: response.status,
-					detail: text.substring(0, 200),
-				},
-				{ status: 502 },
+				{ error: `GitHub API responded with ${response.status}` },
+				{ status: 502, headers: { 'X-Robots-Tag': 'noindex, nofollow' } },
 			);
 		}
 
-		const payload = JSON.parse(text) as GithubResponse & {
-			errors?: { message: string }[];
-		};
+		const payload = JSON.parse(text) as GithubResponse;
 
 		if (payload.errors) {
 			return NextResponse.json(
 				{
 					error: payload.errors?.[0]?.message ?? 'GraphQL error',
 				},
-				{ status: 502 },
+				{ status: 502, headers: { 'X-Robots-Tag': 'noindex, nofollow' } },
+			);
+		}
+
+		if (!payload.data?.user) {
+			return NextResponse.json(
+				{ error: 'No user in response' },
+				{ status: 502, headers: { 'X-Robots-Tag': 'noindex, nofollow' } },
 			);
 		}
 
 		return NextResponse.json(
-			payload.user.contributionsCollection.contributionCalendar,
+			payload.data.user.contributionsCollection.contributionCalendar,
 			{
 				headers: {
 					'Cache-Control':
 						'public, s-maxage=3600, stale-while-revalidate=86400',
+					'X-Robots-Tag': 'noindex, nofollow',
 				},
 			},
 		);
@@ -128,7 +136,7 @@ export async function GET(request: Request) {
 		const detail = e instanceof Error ? e.message : String(e);
 		return NextResponse.json(
 			{ error: 'Failed to fetch contributions', detail },
-			{ status: 502 },
+			{ status: 502, headers: { 'X-Robots-Tag': 'noindex, nofollow' } },
 		);
 	}
 }

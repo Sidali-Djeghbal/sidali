@@ -1,10 +1,17 @@
 import Projects from 'app/projects/projects';
+import type { Metadata } from 'next';
 import { Fragment } from 'react';
 import Header from '../components/header';
 
-export const metadata = {
+const siteUrl = 'https://sidali-djeghbal.dev';
+
+export const metadata: Metadata = {
 	title: 'Projects',
-	description: 'My Projects - Sidali DJEGHBAL',
+	description:
+		'Explore my selected projects — full-stack apps, AI tools, open-source contributions, and web platforms built with modern technologies.',
+	alternates: {
+		canonical: `${siteUrl}/projects`,
+	},
 };
 
 export default function Page() {
