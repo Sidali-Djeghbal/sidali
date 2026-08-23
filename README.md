@@ -78,4 +78,4 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 ## License
 
-This project is a personal portfolio. All rights reserved.
+This project is a personal portfolio. 
