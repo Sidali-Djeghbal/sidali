@@ -75,7 +75,3 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 | `bun run build` | Build the production bundle      |
 | `bun run check` | Run Biome linting                |
 | `bun run format`| Format the codebase with Biome   |
-
-## License
-
-This project is a personal portfolio. 
