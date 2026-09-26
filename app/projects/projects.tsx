@@ -34,6 +34,7 @@ export default function Projects() {
 					<ProjectItem
 						index={index}
 						title={project.title}
+						description={project.description}
 						url={project.url}
 						role={project.role}
 						setModal={setModal}

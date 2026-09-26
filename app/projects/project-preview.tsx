@@ -82,7 +82,7 @@ export default function ProjectPreview({ modal, projects }: ProjectModalProps) {
 	return (
 		<>
 			<motion.div
-				className='pointer-events-none absolute flex h-[350px] w-[400px] items-center justify-center overflow-hidden bg-white'
+				className='pointer-events-none absolute flex h-[250px] w-[350px] items-center justify-center overflow-hidden bg-white'
 				ref={modalContainer}
 				variants={scaleAnimation}
 				initial='initial'
@@ -104,10 +104,10 @@ export default function ProjectPreview({ modal, projects }: ProjectModalProps) {
 								key={`modal_${src}`}
 							>
 								<Image
-									className='h-auto'
+									className='h-full w-full'
 									src={`/static/images/project/${src}`}
-									width={340}
-									height={380}
+									width={300}
+									height={280}
 									alt='image'
 								/>
 							</div>
@@ -116,14 +116,14 @@ export default function ProjectPreview({ modal, projects }: ProjectModalProps) {
 				</div>
 			</motion.div>
 			<motion.div
-				className='font-base pointer-events-none absolute z-10 flex h-16 w-16 items-center justify-center rounded-full bg-primary-500 font-light text-white'
+				className='font-base pointer-events-none absolute z-10 flex h-16 w-16 items-center justify-center rounded-full bg-gray-300 font-light'
 				ref={cursor}
 				variants={scaleAnimation}
 				initial='initial'
 				animate={active ? 'enter' : 'closed'}
 			></motion.div>
 			<motion.div
-				className='font-base pointer-events-none absolute z-10 flex h-16 w-16 items-center justify-center rounded-full bg-transparent font-light text-white'
+				className='font-base pointer-events-none absolute z-10 flex h-16 w-16 items-center justify-center rounded-full bg-transparent font-light text-black'
 				ref={cursorLabel}
 				variants={scaleAnimation}
 				initial='initial'
