@@ -66,13 +66,46 @@ GITHUB_ALLOWED_USERS=Sidali-Djeghbal
 
 ## Local development
 
+### 1 — Create `.dev.vars` (first time only)
+
+Create `tools/.dev.vars` (already gitignored) with your local credentials:
+
+```sh
+GITHUB_CLIENT_ID=your-local-github-client-id
+GITHUB_CLIENT_SECRET=your-local-github-client-secret
+GITHUB_ALLOWED_USERS=Sidali-Djeghbal
+```
+
+To make GitHub OAuth work locally, create a **separate** GitHub OAuth App at
+[github.com/settings/developers](https://github.com/settings/developers) with:
+
+- Homepage URL: `http://localhost:8787`
+- Authorization callback URL: `http://localhost:8787/api/auth/github/callback`
+
+Then use its `Client ID` and `Client Secret` in `.dev.vars`.
+
+> **Note:** The placeholder values (`dev-client-id` / `dev-client-secret`) let
+> the server start, but OAuth login will fail. You need a real local OAuth App
+> to actually sign in.
+
+### 2 — Apply migrations (first time only)
+
 ```sh
 cd tools
 npx wrangler d1 execute sidali-notes --local --file migrations/0001_init.sql
 npx wrangler d1 execute sidali-notes --local --file migrations/0002_command_center.sql
 npx wrangler d1 execute sidali-notes --local --file migrations/0003_reading_tracker.sql
-npx wrangler dev
+npx wrangler d1 execute sidali-notes --local --file migrations/0004_books_link.sql
+npx wrangler d1 execute sidali-notes --local --file migrations/0005_tasks_priority.sql
 ```
+
+### 3 — Start the dev server
+
+```sh
+npx wrangler dev --port 8787
+```
+
+Open **[http://localhost:8787](http://localhost:8787)** in your browser.
 
 ## Deploy
 

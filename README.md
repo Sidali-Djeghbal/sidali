@@ -1,6 +1,6 @@
 # Sidali DJEGHBAL — Personal Portfolio
 
- [Sidali DJEGHBAL's](https://sidali-djeghbal.dev) personal portfolio, an AI Engineer Undergrad and Full-Stack Developer. Features an adaptive theme, an interactive splash cursor, a project showcase, a uses page, and live stats.
+[Sidali DJEGHBAL's](https://sidali-djeghbal.dev) personal portfolio, an AI Engineer Undergrad and Full-Stack Developer. Features an adaptive theme, an interactive splash cursor, a project showcase, a uses page, and live stats.
 
 ## Tech Stack
 
@@ -20,58 +20,84 @@
 | `/uses`     | The tools I use                                    |
 | `/stats`    | GitHub contributions and WakaTime stats            |
 
-## Running Locally
+## Monorepo Structure
+
+```
+sidali/
+├── app/          # Next.js portfolio website  →  sidali-djeghbal.dev
+└── tools/        # Cloudflare Worker command center  →  tools.sidali-djeghbal.dev
+```
+
+---
+
+## 🌐 Running the Portfolio Locally
 
 ### Prerequisites
 
-- [bun](https://bun.sh/) (or npm/yarn/pnpm)
+- [Bun](https://bun.sh/) (recommended) — or npm / yarn / pnpm
 
-### Installation
-
-1. Clone the repo:
-
-```bash
-git clone https://github.com/Sidali-Djeghbal/sidali
-cd sidali
-```
-
-2. Install dependencies:
+### 1 — Install dependencies
 
 ```bash
 bun install
 ```
 
-3. Create your environment file:
+### 2 — Set up environment variables
 
 ```bash
 cp .env.example .env.local
 ```
 
-4. Add your environment variables to `.env.local`:
+Then fill in `.env.local`:
 
-```txt
-NEXT_PUBLIC_LOGROCKET_ID=...
-NEXT_PUBLIC_GITHUB_TOKEN=...
-WAKATIME_SECRET_KEY=...
-NEXT_PUBLIC_UMAMI_WEBSITE_ID=...
-NEXT_PUBLIC_UMAMI_WEBSITE_URL=...
-```
+| Variable                      | Required | Description                                                  |
+| ----------------------------- | -------- | ------------------------------------------------------------ |
+| `GITHUB_TOKEN`                | Optional | GitHub personal access token for GraphQL stats (server-side) |
+| `WAKATIME_SECRET_KEY`         | Optional | WakaTime API secret key for coding stats                     |
+| `NEXT_PUBLIC_LOGROCKET_ID`    | Optional | LogRocket app ID for session recording                       |
+| `NEXT_PUBLIC_UMAMI_WEBSITE_ID`| Optional | Umami analytics website ID                                   |
+| `NEXT_PUBLIC_UMAMI_WEBSITE_URL`| Optional | Umami analytics script URL                                   |
 
-> GitHub and WakaTime variables are optional — the corresponding stats sections will fail gracefully without them.
+> All variables are optional — the stats sections will fail gracefully if they are missing.
 
-5. Run the development server:
+### 3 — Start the dev server
 
 ```bash
 bun run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open **[http://localhost:3000](http://localhost:3000)** in your browser.
 
 ### Useful Scripts
 
-| Script       | Description                        |
-| ------------ | ---------------------------------- |
-| `bun run dev`   | Start the development server     |
-| `bun run build` | Build the production bundle      |
-| `bun run check` | Run Biome linting                |
-| `bun run format`| Format the codebase with Biome   |
+| Script            | Description                        |
+| ----------------- | ---------------------------------- |
+| `bun run dev`     | Start the development server       |
+| `bun run build`   | Build the production bundle        |
+| `bun run check`   | Run Biome linting                  |
+| `bun run format`  | Format the codebase with Biome     |
+
+---
+
+## 🛠️ Running the Command Center Locally
+
+The command center lives in `tools/` and is a separate Cloudflare Worker + D1 app.
+See [`tools/README.md`](./tools/README.md) for the full local dev guide.
+
+**Quick start:**
+
+```bash
+cd tools
+
+# 1. Apply all migrations to the local D1 database (first time only)
+npx wrangler d1 execute sidali-notes --local --file migrations/0001_init.sql
+npx wrangler d1 execute sidali-notes --local --file migrations/0002_command_center.sql
+npx wrangler d1 execute sidali-notes --local --file migrations/0003_reading_tracker.sql
+npx wrangler d1 execute sidali-notes --local --file migrations/0004_books_link.sql
+npx wrangler d1 execute sidali-notes --local --file migrations/0005_tasks_priority.sql
+
+# 2. Start the local dev server
+npx wrangler dev --port 8787
+```
+
+Open **[http://localhost:8787](http://localhost:8787)** in your browser.
