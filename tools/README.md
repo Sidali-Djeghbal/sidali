@@ -74,7 +74,14 @@ Create `tools/.dev.vars` (already gitignored) with your local credentials:
 GITHUB_CLIENT_ID=your-local-github-client-id
 GITHUB_CLIENT_SECRET=your-local-github-client-secret
 GITHUB_ALLOWED_USERS=Sidali-Djeghbal
+LOCAL_ORIGIN=http://localhost:8787
 ```
+
+> **Why `LOCAL_ORIGIN`?** Wrangler dev sets `request.url` to the production
+> domain defined in `wrangler.jsonc` routes, which causes GitHub OAuth to
+> redirect back to `tools.sidali-djeghbal.dev` instead of `localhost:8787`.
+> Setting `LOCAL_ORIGIN` overrides the base URL used for the OAuth redirect URI.
+
 
 To make GitHub OAuth work locally, create a **separate** GitHub OAuth App at
 [github.com/settings/developers](https://github.com/settings/developers) with:

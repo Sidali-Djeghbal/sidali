@@ -215,6 +215,13 @@ function redirect(url, headers = {}) {
 	});
 }
 
+// Returns the correct origin to use for OAuth redirect URIs.
+// In local dev, wrangler sets request.url to the production domain from wrangler.jsonc
+// routes, so we allow overriding it with LOCAL_ORIGIN in .dev.vars.
+function getOrigin(request, env) {
+	return env.LOCAL_ORIGIN || new URL(request.url).origin;
+}
+
 async function handleGithubAuthorize(request, env) {
 	const clientId = env.GITHUB_CLIENT_ID;
 	if (!clientId || !env.GITHUB_CLIENT_SECRET) {
@@ -226,7 +233,8 @@ async function handleGithubAuthorize(request, env) {
 	}
 
 	const state = randomToken(16);
-	const redirectUri = new URL('/api/auth/github/callback', request.url).toString();
+	const origin = getOrigin(request, env);
+	const redirectUri = new URL('/api/auth/github/callback', origin).toString();
 	const params = new URLSearchParams({
 		client_id: clientId,
 		redirect_uri: redirectUri,
@@ -263,7 +271,7 @@ async function handleGithubCallback(request, env) {
 			client_id: env.GITHUB_CLIENT_ID,
 			client_secret: env.GITHUB_CLIENT_SECRET,
 			code,
-			redirect_uri: new URL('/api/auth/github/callback', request.url).toString(),
+			redirect_uri: new URL('/api/auth/github/callback', getOrigin(request, env)).toString(),
 		}),
 	});
 	const tokenData = await tokenRes.json();
