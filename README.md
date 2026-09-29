@@ -30,7 +30,7 @@ sidali/
 
 ---
 
-## 🌐 Running the Portfolio Locally
+## Running the Portfolio Locally
 
 ### Prerequisites
 
@@ -79,7 +79,7 @@ Open **[http://localhost:3000](http://localhost:3000)** in your browser.
 
 ---
 
-## 🛠️ Running the Command Center Locally
+## Running the Command Center Locally
 
 The command center lives in `tools/` and is a separate Cloudflare Worker + D1 app.
 See [`tools/README.md`](./tools/README.md) for the full local dev guide.
