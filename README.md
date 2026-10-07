@@ -1,6 +1,6 @@
 # Personal Portfolio
 
-[Sidali DJEGHBAL's](https://sidali-djeghbal.dev) personal portfolio, an AI Engineer Undergrad and Full-Stack Developer. Features an adaptive theme, an interactive splash cursor, a project showcase, a uses page, and live stats.
+[Sidali DJEGHBAL's](https://sidali-djeghbal.dev) personal portfolio, an AI Engineer Undergrad and Full-Stack Developer. Features an adaptive theme, an interactive splash cursor, a project showcase, an uses page, and live stats.
 
 ## Tech Stack
 
