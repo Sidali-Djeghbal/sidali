@@ -100,4 +100,4 @@ npx wrangler d1 execute sidali-notes --local --file migrations/0005_tasks_priori
 npx wrangler dev --port 8787
 ```
 
-Open **[http://localhost:8787](http://localhost:8787)** in your browser.
+Open **[http://localhost:8787](http://localhost:8787)** in the browser.
