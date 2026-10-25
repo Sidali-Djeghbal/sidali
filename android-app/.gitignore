@@ -1,0 +1,31 @@
+# dependencies (bun install)
+node_modules
+
+# output
+out
+dist
+*.tgz
+
+# Android build outputs & Gradle caches
+android/.gradle/
+android/build/
+android/app/build/
+android/capacitor-cordova-android-plugins/build/
+android/.idea/
+android/*.iml
+android/app/*.iml
+android/local.properties
+.gradle/
+build/
+
+# logs
+logs
+*.log
+
+# caches
+.cache
+*.tsbuildinfo
+
+# IDEs
+.idea
+.DS_Store

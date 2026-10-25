@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+		<title>Command Center</title>
+		<style>
+			:root {
+				--bg: #000000;
+				--fg: #ffffff;
+				--muted: rgba(255, 255, 255, 0.6);
+				--card: rgba(255, 255, 255, 0.08);
+				--border: rgba(255, 255, 255, 0.15);
+			}
+			* {
+				box-sizing: border-box;
+				margin: 0;
+				padding: 0;
+			}
+			body {
+				background-color: var(--bg);
+				color: var(--fg);
+				font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+				min-height: 100vh;
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				justify-content: center;
+				padding: 24px;
+				text-align: center;
+			}
+			.logo {
+				width: 64px;
+				height: 64px;
+				margin-bottom: 24px;
+				color: #ffffff;
+				animation: pulse 2s infinite ease-in-out;
+			}
+			@keyframes pulse {
+				0%, 100% { opacity: 0.8; transform: scale(1); }
+				50% { opacity: 1; transform: scale(1.05); }
+			}
+			h1 {
+				font-size: 1.5rem;
+				font-weight: 600;
+				letter-spacing: -0.02em;
+				margin-bottom: 8px;
+			}
+			p {
+				color: var(--muted);
+				font-size: 0.95rem;
+				line-height: 1.5;
+				max-width: 320px;
+				margin-bottom: 24px;
+			}
+			.btn {
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				background: #ffffff;
+				color: #000000;
+				font-weight: 600;
+				font-size: 0.95rem;
+				padding: 12px 24px;
+				border-radius: 9999px;
+				border: none;
+				cursor: pointer;
+				text-decoration: none;
+				transition: opacity 0.2s;
+			}
+			.btn:active {
+				opacity: 0.8;
+			}
+		</style>
+	</head>
+	<body>
+		<svg class="logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 810 810" fill="currentColor">
+			<path d="M500.418 633.273L337.152 796.875H141.719L60.504 715.184l150.66-151.136 66.524 66.43-71.292 71.106h91.785l69.145-68.956L134.184 399.691l182.543-182.548 186.898 186.902-66.523 66.508L316.707 350.164l-49.492 49.496z"/>
+			<path d="M272.824 173.469L206.395 107.242h91.785l297.563 297.36-112.414 112.288 66.586 66.54L728.965 404.586 337.152 13.059H141.719L60.504 94.117 206.316 239.93z"/>
+		</svg>
+		<h1>Connecting to Command Center</h1>
+		<p id="status-text">Loading tools.sidali-djeghbal.dev...</p>
+		<button class="btn" id="retry-btn" onclick="location.href='https://tools.sidali-djeghbal.dev/'">Retry Connection</button>
+
+		<script>
+			// If not connected within 4 seconds, show offline notice
+			setTimeout(() => {
+				document.getElementById('status-text').textContent = 'Unable to reach the server. Please check your internet connection.';
+			}, 4000);
+		</script>
+	</body>
+</html>
