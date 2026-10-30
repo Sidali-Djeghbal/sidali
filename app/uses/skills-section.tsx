@@ -217,7 +217,7 @@ export default function SkillsSection() {
 										</p>
 									</div>
 
-									<div className='flex flex-nowrap content-start gap-x-3 gap-y-2 overflow-x-auto pb-1 sm:pt-0.5 lg:flex-wrap lg:overflow-visible lg:pb-0 lg:justify-start'>
+									<div className='flex flex-wrap content-start gap-x-2 gap-y-2 pt-0.5'>
 										{group.skills.map((skill) => (
 											<span
 												key={skill}
@@ -256,21 +256,24 @@ export default function SkillsSection() {
 						</p>
 					</div>
 
-					<div className='divide-y divide-gray-200 border-t border-gray-200 dark:divide-gray-800 dark:border-gray-800'>
+					<div className='grid gap-3 sm:grid-cols-2'>
 						{softSkills.map((skill) => (
 							<div
 								key={skill.name}
-								className={classNames(
-									'grid gap-2 py-5 sm:grid-cols-[180px_minmax(0,1fr)] sm:items-start sm:gap-8',
-								)}
+								className='group relative flex gap-4 rounded-xl border border-gray-200 bg-gray-50 px-5 py-4 transition-colors duration-200 hover:border-gray-300 hover:bg-gray-100 dark:border-gray-800 dark:bg-gray-900/50 dark:hover:border-gray-700 dark:hover:bg-gray-900'
 							>
-								<h3 className='text-sm font-semibold tracking-tight text-gray-900 whitespace-nowrap dark:text-gray-200'>
-									{skill.name}
-								</h3>
+								<span className='mt-0.5 shrink-0 font-mono text-xs font-medium text-gray-400 dark:text-gray-600'>
+									{skill.number}
+								</span>
 
-								<p className='min-w-0 text-sm leading-6 text-gray-500 dark:text-gray-600'>
-									{skill.description}
-								</p>
+								<div>
+									<h3 className='text-sm font-semibold tracking-tight text-gray-900 dark:text-gray-100'>
+										{skill.name}
+									</h3>
+									<p className='mt-1 text-xs leading-5 text-gray-500 dark:text-gray-500'>
+										{skill.description}
+									</p>
+								</div>
 							</div>
 						))}
 					</div>
