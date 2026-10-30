@@ -1,3 +1,4 @@
+import GithubCta from 'app/projects/github-cta';
 import Projects from 'app/projects/projects';
 import type { Metadata } from 'next';
 import { Fragment } from 'react';
@@ -24,6 +25,7 @@ export default function Page() {
 				</p>
 			</div>
 			<Projects />
+			<GithubCta />
 		</Fragment>
 	);
 }
