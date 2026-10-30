@@ -1,4 +1,3 @@
-import path from 'node:path';
 import createMDX from '@next/mdx';
 import type { NextConfig } from 'next';
 
@@ -15,7 +14,7 @@ const nextConfig: NextConfig = {
 		contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
 	},
 	turbopack: {
-		root: path.join(__dirname, '..'),
+		root: __dirname,
 	},
 	experimental: {
 		turbopackFileSystemCacheForDev: true,
