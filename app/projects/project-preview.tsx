@@ -67,7 +67,7 @@ export default function ProjectPreview({ modal, projects }: ProjectModalProps) {
 				ease: 'power3',
 			});
 
-			window.addEventListener('mousemove', (e) => {
+			const handleMouseMove = (e: MouseEvent) => {
 				const { pageX, pageY } = e;
 				xMoveContainer(pageX);
 				yMoveContainer(pageY);
@@ -75,7 +75,13 @@ export default function ProjectPreview({ modal, projects }: ProjectModalProps) {
 				yMoveCursor(pageY);
 				xMoveCursorLabel(pageX);
 				yMoveCursorLabel(pageY);
-			});
+			};
+
+			window.addEventListener('mousemove', handleMouseMove);
+
+			return () => {
+				window.removeEventListener('mousemove', handleMouseMove);
+			};
 		}
 	}, []);
 
