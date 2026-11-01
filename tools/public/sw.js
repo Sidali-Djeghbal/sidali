@@ -1,6 +1,6 @@
 /* Service Worker for Command Center PWA */
 
-const CACHE_NAME = 'command-center-v1';
+const CACHE_NAME = 'command-center-v2';
 const STATIC_ASSETS = [
 	'/',
 	'/index.html',
@@ -8,6 +8,12 @@ const STATIC_ASSETS = [
 	'/app.js',
 	'/logo.svg',
 	'/manifest.webmanifest',
+	'/fonts/fonts.css',
+	'/fonts/merriweather-400.woff2',
+	'/fonts/merriweather-700.woff2',
+	'/fonts/mukta-400.woff2',
+	'/fonts/mukta-600.woff2',
+	'/fonts/mukta-700.woff2',
 	'/icons/icon-192.png',
 	'/icons/icon-512.png',
 	'/icons/icon-maskable-192.png',

@@ -63,7 +63,16 @@ export default {
 			}
 		}
 
-		return env.ASSETS.fetch(request);
+		const assetRes = await env.ASSETS.fetch(request);
+		const headers = new Headers(assetRes.headers);
+		headers.set('X-Content-Type-Options', 'nosniff');
+		headers.set('X-Frame-Options', 'DENY');
+		headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+		return new Response(assetRes.body, {
+			status: assetRes.status,
+			statusText: assetRes.statusText,
+			headers,
+		});
 	},
 
 	async scheduled(event, env, ctx) {
@@ -76,6 +85,9 @@ export default {
 async function routeApi(request, env, path) {
 	const db = env.DB;
 
+	if (path === '/api/bootstrap' && request.method === 'GET') {
+		return handleBootstrap(db);
+	}
 	if (path.startsWith('/api/bookmarks')) {
 		return handleBookmarks(request, db, path.slice('/api/bookmarks'.length));
 	}
@@ -89,6 +101,44 @@ async function routeApi(request, env, path) {
 		return handleBooks(request, db, path.slice('/api/books'.length));
 	}
 	return json({ error: 'not found' }, 404);
+}
+
+async function handleBootstrap(db) {
+	const [bookmarksRes, tasksRes, habitsRes, logsRes, booksRes, sessionsRes] = await Promise.all([
+		db.prepare('SELECT * FROM bookmarks ORDER BY position ASC, created_at DESC').all(),
+		db.prepare('SELECT * FROM tasks ORDER BY position ASC, created_at DESC').all(),
+		db.prepare('SELECT * FROM habits WHERE archived = 0 ORDER BY created_at ASC').all(),
+		db.prepare('SELECT habit_id, day FROM habit_logs WHERE day >= ?')
+			.bind(new Date(Date.now() - 190 * 86400000).toISOString().slice(0, 10))
+			.all(),
+		db.prepare(
+			`SELECT * FROM books
+			 ORDER BY CASE status WHEN 'reading' THEN 0 WHEN 'want' THEN 1 ELSE 2 END,
+			 updated_at DESC`,
+		).all(),
+		db.prepare('SELECT * FROM book_sessions ORDER BY day ASC, created_at ASC').all(),
+	]);
+
+	const habits = habitsRes.results || [];
+	const byHabit = new Map(habits.map((h) => [h.id, []]));
+	for (const log of logsRes.results || []) {
+		const list = byHabit.get(log.habit_id);
+		if (list) list.push(log.day);
+	}
+
+	const books = booksRes.results || [];
+	const byBook = new Map(books.map((b) => [b.id, []]));
+	for (const s of sessionsRes.results || []) {
+		const list = byBook.get(s.book_id);
+		if (list) list.push(s);
+	}
+
+	return json({
+		bookmarks: bookmarksRes.results || [],
+		tasks: tasksRes.results || [],
+		habits: habits.map((h) => ({ ...h, logs: byHabit.get(h.id) || [] })),
+		books: books.map((b) => ({ ...b, sessions: byBook.get(b.id) || [] })),
+	});
 }
 
 /* ------------------------------------------------------------------ */
@@ -181,6 +231,11 @@ function withCookie(response, name, value, maxAgeSeconds) {
 
 function tooManyAttempts(ip) {
 	const now = Date.now();
+	if (loginAttempts.size > 100) {
+		for (const [key, val] of loginAttempts) {
+			if (val.resetAt < now) loginAttempts.delete(key);
+		}
+	}
 	const entry = loginAttempts.get(ip);
 	if (!entry || entry.resetAt < now) {
 		loginAttempts.set(ip, { count: 1, resetAt: now + LOGIN_WINDOW_MS });

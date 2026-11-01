@@ -37,7 +37,7 @@ export default function ProjectItem({
 
 	if (!url) {
 		return (
-			<div
+			<article
 				className={className}
 				onMouseEnter={() => {
 					setModal({ active: true, index });
@@ -47,7 +47,7 @@ export default function ProjectItem({
 				}}
 			>
 				{content}
-			</div>
+			</article>
 		);
 	}
 

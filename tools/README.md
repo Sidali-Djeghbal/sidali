@@ -100,6 +100,7 @@ tools/
 | `/api/auth/github/callback` | GET | OAuth callback; validates user allowlist and issues session |
 | `/api/logout` | POST | Clears session cookie |
 | `/api/session` | GET | Validates session and returns current user |
+| `/api/bootstrap` | GET | Single batch query returning bookmarks, tasks, habits, and books |
 | `/api/bookmarks[/:id]` | GET, POST, PUT, DELETE | Manage bookmarks with fractional ordering |
 | `/api/tasks[/:id]` | GET, POST, PUT, DELETE | Manage Kanban tasks (status, priority, position) |
 | `/api/habits[/:id]` | GET, POST, PUT, DELETE | Manage habit definitions and archive states |

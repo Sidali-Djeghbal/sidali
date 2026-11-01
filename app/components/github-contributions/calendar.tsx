@@ -49,8 +49,8 @@ export default function Calendar({ contributions }: Props) {
 				))}
 			</ul>
 
-			<div
-				role='presentation'
+			<section
+				aria-label='Contribution grid'
 				className='flex justify-start gap-0.75 overflow-hidden'
 				onMouseLeave={() => setHoveredCell(null)}
 			>
@@ -90,7 +90,7 @@ export default function Calendar({ contributions }: Props) {
 						})}
 					</div>
 				))}
-			</div>
+			</section>
 
 			<div className='flex flex-wrap items-center justify-between gap-2'>
 				<div className='flex items-center gap-2 text-sm'>

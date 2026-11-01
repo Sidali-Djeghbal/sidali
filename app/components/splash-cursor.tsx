@@ -294,7 +294,10 @@ function SplashCursor({
 			vertexShader: WebGLShader,
 			fragmentShader: WebGLShader,
 		): WebGLProgram {
-			const program = gl.createProgram()!;
+			const program = gl.createProgram();
+			if (!program) {
+				throw new Error('Failed to create WebGL program');
+			}
 			gl.attachShader(program, vertexShader);
 			gl.attachShader(program, fragmentShader);
 			gl.linkProgram(program);
@@ -309,8 +312,13 @@ function SplashCursor({
 			const uniforms: Record<string, WebGLUniformLocation | null> = {};
 			const uniformCount = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS);
 			for (let i = 0; i < uniformCount; i++) {
-				const uniformName = gl.getActiveUniform(program, i)!.name;
-				uniforms[uniformName] = gl.getUniformLocation(program, uniformName);
+				const activeUniform = gl.getActiveUniform(program, i);
+				if (activeUniform) {
+					uniforms[activeUniform.name] = gl.getUniformLocation(
+						program,
+						activeUniform.name,
+					);
+				}
 			}
 			return uniforms;
 		}
@@ -321,7 +329,10 @@ function SplashCursor({
 			keywords?: string[] | null,
 		): WebGLShader {
 			source = addKeywords(source, keywords);
-			const shader = gl.createShader(type)!;
+			const shader = gl.createShader(type);
+			if (!shader) {
+				throw new Error('Failed to create WebGL shader');
+			}
 			gl.shaderSource(shader, source);
 			gl.compileShader(shader);
 			if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS))
@@ -333,7 +344,7 @@ function SplashCursor({
 			if (!keywords) return source;
 			let keywordsString = '';
 			keywords.forEach((keyword) => {
-				keywordsString += '#define ' + keyword + '\n';
+				keywordsString += `#define ${keyword}\n`;
 			});
 			return keywordsString + source;
 		}

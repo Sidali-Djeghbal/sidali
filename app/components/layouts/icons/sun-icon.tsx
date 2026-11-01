@@ -54,7 +54,9 @@ const SunMediumIcon = forwardRef<SunMediumIconHandle, SunMediumIconProps>(
 		};
 
 		return (
-			<div
+			<span
+				role='img'
+				aria-label='Sun icon'
 				className={classNames(
 					`cursor-pointer select-none p-2 hover:bg-accent rounded-md transition-colors duration-200 flex items-center justify-center`,
 					className,
@@ -73,6 +75,7 @@ const SunMediumIcon = forwardRef<SunMediumIconHandle, SunMediumIconProps>(
 					strokeWidth='2'
 					strokeLinecap='round'
 					strokeLinejoin='round'
+					aria-hidden='true'
 				>
 					<circle cx='12' cy='12' r='4' />
 					{[
@@ -94,7 +97,7 @@ const SunMediumIcon = forwardRef<SunMediumIconHandle, SunMediumIconProps>(
 						/>
 					))}
 				</svg>
-			</div>
+			</span>
 		);
 	},
 );

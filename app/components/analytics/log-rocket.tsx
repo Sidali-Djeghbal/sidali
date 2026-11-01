@@ -1,7 +1,5 @@
 'use client';
 
-import rocket from 'logrocket';
-import setupLogRocketReact from 'logrocket-react';
 import { useEffect } from 'react';
 
 export default function LogRocket() {
@@ -12,8 +10,16 @@ export default function LogRocket() {
 			return;
 		}
 
-		rocket.init(logrocketId);
-		setupLogRocketReact();
+		Promise.all([import('logrocket'), import('logrocket-react')])
+			.then(([rocketModule, setupModule]) => {
+				const rocket = rocketModule.default;
+				const setupLogRocketReact = setupModule.default;
+				rocket.init(logrocketId);
+				setupLogRocketReact();
+			})
+			.catch((err) => {
+				console.error('Failed to load LogRocket:', err);
+			});
 	}, [logrocketId]);
 
 	return null;

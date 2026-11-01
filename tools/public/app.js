@@ -373,6 +373,17 @@
 	}
 
 	function wireTopbar() {
+		var searchBtn = $('#search-toggle');
+		if (searchBtn) {
+			searchBtn.addEventListener('click', openCommandPalette);
+		}
+		document.addEventListener('keydown', function (e) {
+			if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+				e.preventDefault();
+				openCommandPalette();
+			}
+		});
+
 		$('#logout-btn').addEventListener('click', function () {
 			closeDropdown();
 			api('/api/logout', { method: 'POST', body: {} })
@@ -401,6 +412,81 @@
 		document.addEventListener('click', function (e) {
 			if (!e.target.closest('.user-menu')) closeDropdown();
 		});
+	}
+
+	function openCommandPalette() {
+		var overlay = openModal(
+			'Quick search',
+			'<div class="palette">' +
+			'<input id="palette-input" class="input" placeholder="Search tasks, bookmarks, books..." autocomplete="off" />' +
+			'<div id="palette-results" class="palette-results" style="margin-top:0.8rem;max-height:360px;overflow-y:auto;display:flex;flex-direction:column;gap:0.4rem"></div>' +
+			'</div>'
+		);
+		var input = overlay.querySelector('#palette-input');
+		var results = overlay.querySelector('#palette-results');
+		if (input) input.focus();
+
+		function updateResults() {
+			var q = (input.value || '').trim().toLowerCase();
+			if (!q) {
+				results.innerHTML = '<p class="muted" style="padding:0.5rem 0">Type to search across your workspace...</p>';
+				return;
+			}
+			var matches = [];
+			(state.bookmarks || []).forEach(function (b) {
+				if ((b.title && b.title.toLowerCase().includes(q)) || (b.url && b.url.toLowerCase().includes(q))) {
+					matches.push({
+						type: 'Bookmark',
+						title: b.title,
+						sub: b.url,
+						action: function () { window.open(b.url, '_blank'); },
+					});
+				}
+			});
+			(state.tasks || []).forEach(function (t) {
+				if ((t.title && t.title.toLowerCase().includes(q)) || (t.notes && t.notes.toLowerCase().includes(q))) {
+					matches.push({
+						type: 'Task · ' + t.status,
+						title: t.title,
+						sub: t.notes || '',
+						action: function () { location.hash = '#tasks'; },
+					});
+				}
+			});
+			(state.books || []).forEach(function (b) {
+				if ((b.title && b.title.toLowerCase().includes(q)) || (b.author && b.author.toLowerCase().includes(q))) {
+					matches.push({
+						type: 'Book · ' + b.status,
+						title: b.title,
+						sub: b.author || '',
+						action: function () { location.hash = '#books'; },
+					});
+				}
+			});
+
+			if (!matches.length) {
+				results.innerHTML = '<p class="muted" style="padding:0.5rem 0">No results found for &ldquo;' + esc(q) + '&rdquo;.</p>';
+				return;
+			}
+
+			results.innerHTML = matches.slice(0, 15).map(function (m, idx) {
+				return '<div class="palette-item" data-idx="' + idx + '" style="padding:0.6rem 0.8rem;border-radius:var(--radius-sm);cursor:pointer;border:1px solid var(--card-border);background:var(--card)">' +
+					'<div style="display:flex;justify-content:space-between;align-items:center"><strong style="font-size:0.95rem">' + esc(m.title) + '</strong><span style="font-size:0.75rem;padding:0.15rem 0.4rem;border-radius:0.4rem;background:var(--card-hover);color:var(--muted)">' + esc(m.type) + '</span></div>' +
+					(m.sub ? '<div style="font-size:0.8rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:0.2rem">' + esc(m.sub) + '</div>' : '') +
+					'</div>';
+			}).join('');
+
+			results.querySelectorAll('.palette-item').forEach(function (el) {
+				el.addEventListener('click', function () {
+					var idx = Number(el.dataset.idx);
+					closeModal();
+					if (matches[idx]) matches[idx].action();
+				});
+			});
+		}
+
+		input.addEventListener('input', updateResults);
+		updateResults();
 	}
 
 	/* ================================================================
@@ -888,15 +974,39 @@
 		if (!input) return;
 		var title = input.value.trim();
 		if (!title) return;
+		input.value = '';
+		var tempId = 'temp_' + Date.now();
+		var tempTask = {
+			id: tempId,
+			title: title,
+			notes: '',
+			status: status,
+			priority: 'none',
+			position: positionBetween(tasksIn(status), null, null),
+			completed_at: status === 'done' ? Date.now() : null,
+			created_at: Date.now(),
+			updated_at: Date.now(),
+		};
+		state.tasks.push(tempTask);
+		rerender(true);
+		var next = view.querySelector('[data-compose="' + status + '"]');
+		if (next) next.focus();
+
 		api('/api/tasks', { method: 'POST', body: { title: title, status: status } })
 			.then(function (task) {
-				state.tasks.push(task);
+				var idx = state.tasks.findIndex(function (t) { return t.id === tempId; });
+				if (idx !== -1) {
+					state.tasks[idx] = task;
+				} else {
+					state.tasks.push(task);
+				}
 				toast('Task added');
-				rerender(true);
-				var next = view.querySelector('[data-compose="' + status + '"]');
-				if (next) next.focus();
 			})
-			.catch(fail);
+			.catch(function (err) {
+				state.tasks = state.tasks.filter(function (t) { return t.id !== tempId; });
+				rerender(true);
+				fail(err);
+			});
 	}
 
 	function toggleTaskDone(task) {
@@ -1183,17 +1293,34 @@
 	}
 
 	function toggleDay(habitId, day) {
+		var habit = find(state.habits, habitId);
+		if (!habit) return;
+		var idx = habit.logs.indexOf(day);
+		var wasDone = idx !== -1;
+		if (wasDone) {
+			habit.logs.splice(idx, 1);
+		} else {
+			habit.logs.push(day);
+			habit.logs.sort();
+		}
+		rerender(true);
+
 		api('/api/habits/' + habitId + '/toggle', { method: 'POST', body: { day: day } })
 			.then(function (res) {
-				var habit = find(state.habits, habitId);
-				if (!habit) return;
-				var idx = habit.logs.indexOf(res.day);
-				if (res.done && idx === -1) habit.logs.push(res.day);
-				if (!res.done && idx !== -1) habit.logs.splice(idx, 1);
+				var curIdx = habit.logs.indexOf(res.day);
+				if (res.done && curIdx === -1) habit.logs.push(res.day);
+				if (!res.done && curIdx !== -1) habit.logs.splice(curIdx, 1);
 				habit.logs.sort();
 				rerender(true);
 			})
-			.catch(fail);
+			.catch(function (err) {
+				var revertIdx = habit.logs.indexOf(day);
+				if (wasDone && revertIdx === -1) habit.logs.push(day);
+				if (!wasDone && revertIdx !== -1) habit.logs.splice(revertIdx, 1);
+				habit.logs.sort();
+				rerender(true);
+				fail(err);
+			});
 	}
 
 	function habitModal(habit) {
@@ -1734,7 +1861,16 @@
 	}
 
 	function loadLauncher() {
-		return Promise.all([loadBookmarks(), loadTasks(), loadHabits(), loadBooks()]);
+		return api('/api/bootstrap')
+			.then(function (data) {
+				state.bookmarks = data.bookmarks || [];
+				state.tasks = data.tasks || [];
+				state.habits = data.habits || [];
+				state.books = data.books || [];
+			})
+			.catch(function () {
+				return Promise.all([loadBookmarks(), loadTasks(), loadHabits(), loadBooks()]);
+			});
 	}
 
 	var ROUTES = {

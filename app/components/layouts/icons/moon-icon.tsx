@@ -59,7 +59,9 @@ const MoonIcon = forwardRef<MoonIconHandle, MoonIconProps>(
 			}
 		};
 		return (
-			<div
+			<span
+				role='img'
+				aria-label='Moon icon'
 				className={classNames(
 					`cursor-pointer select-none p-2 hover:bg-accent rounded-md transition-colors duration-200 flex items-center justify-center`,
 					className,
@@ -78,13 +80,14 @@ const MoonIcon = forwardRef<MoonIconHandle, MoonIconProps>(
 					strokeWidth='2'
 					strokeLinecap='round'
 					strokeLinejoin='round'
+					aria-hidden='true'
 					variants={svgVariants}
 					animate={controls}
 					transition={svgTransition}
 				>
 					<path d='M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z' />
 				</motion.svg>
-			</div>
+			</span>
 		);
 	},
 );

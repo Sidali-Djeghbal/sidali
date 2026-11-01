@@ -56,22 +56,28 @@ export const getAllTimeStats = cache(
 			return emptyAllTimeStats;
 		}
 
-		const response = await fetch(
-			`${WAKATIME_ENDPOINT}/users/current/all_time_since_today`,
-			{
-				headers: {
-					Authorization: `Basic ${token}`,
+		try {
+			const response = await fetch(
+				`${WAKATIME_ENDPOINT}/users/current/all_time_since_today`,
+				{
+					headers: {
+						Authorization: `Basic ${token}`,
+					},
+					next: { revalidate: 3600 },
 				},
-			},
-		);
+			);
 
-		if (!response.ok) {
-			console.error('Error:', response.status, await response.text());
+			if (!response.ok) {
+				console.error('Error:', response.status, await response.text());
+				return emptyAllTimeStats;
+			}
+
+			const result = await response.json();
+			return result.data ?? emptyAllTimeStats;
+		} catch (error) {
+			console.error('Failed to fetch WakaTime all-time stats:', error);
+			return emptyAllTimeStats;
 		}
-
-		const result = await response.json();
-
-		return result.data;
 	},
 );
 
@@ -83,20 +89,26 @@ export const getStatsThisWeek = cache(async (): Promise<UserStats> => {
 		return emptyUserStats;
 	}
 
-	const response = await fetch(
-		`${WAKATIME_ENDPOINT}/users/current/stats/last_7_days`,
-		{
-			headers: {
-				Authorization: `Basic ${token}`,
+	try {
+		const response = await fetch(
+			`${WAKATIME_ENDPOINT}/users/current/stats/last_7_days`,
+			{
+				headers: {
+					Authorization: `Basic ${token}`,
+				},
+				next: { revalidate: 3600 },
 			},
-		},
-	);
+		);
 
-	if (!response.ok) {
-		console.error('Error:', response.status, await response.text());
+		if (!response.ok) {
+			console.error('Error:', response.status, await response.text());
+			return emptyUserStats;
+		}
+
+		const result = await response.json();
+		return result.data ?? emptyUserStats;
+	} catch (error) {
+		console.error('Failed to fetch WakaTime weekly stats:', error);
+		return emptyUserStats;
 	}
-
-	const result = await response.json();
-
-	return result.data;
 });
