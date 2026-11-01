@@ -18,6 +18,7 @@ export default function Header({ title }: { title: string }) {
 					alt='Sidali DJEGHBAL logo'
 					width={40}
 					height={40}
+					priority
 					className='hidden rounded-full dark:block'
 				/>
 				<Image
@@ -25,6 +26,7 @@ export default function Header({ title }: { title: string }) {
 					alt='Sidali DJEGHBAL logo'
 					width={40}
 					height={40}
+					priority
 					className='rounded-full dark:hidden'
 				/>
 				<span className='font-bold'>Home</span>

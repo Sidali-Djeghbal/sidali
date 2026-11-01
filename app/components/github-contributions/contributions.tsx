@@ -23,10 +23,27 @@ const fetcher = async (year: number): Promise<ContributionCalendar> => {
 export default function Contributions() {
 	const [year, setYear] = useState(new Date().getFullYear());
 
-	const { data: contributions, isLoading } = useSWR(
-		['contributions', GITHUB_USERNAME, year], // Cache key
-		() => fetcher(year),
-	);
+	const {
+		data: contributions,
+		isLoading,
+		error,
+		mutate,
+	} = useSWR(['contributions', GITHUB_USERNAME, year], () => fetcher(year));
+
+	if (error) {
+		return (
+			<div className='flex flex-col space-y-2 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/50 p-4 text-sm text-neutral-600 dark:text-neutral-400'>
+				<p>Unable to load GitHub contribution history at this time.</p>
+				<button
+					type='button'
+					onClick={() => mutate()}
+					className='self-start text-xs font-medium underline text-black dark:text-white'
+				>
+					Try again
+				</button>
+			</div>
+		);
+	}
 
 	if (!contributions || isLoading) {
 		return (

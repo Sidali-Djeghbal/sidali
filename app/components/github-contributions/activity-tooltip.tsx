@@ -11,6 +11,8 @@ interface Props {
 }
 
 export default function ActivityTooltip({ count, date, x, y }: Props) {
+	if (typeof document === 'undefined') return null;
+
 	const formattedDate = date.toLocaleDateString('en-US', {
 		month: 'short',
 		day: 'numeric',

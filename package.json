@@ -13,6 +13,7 @@
     "lint": "biome check --write .",
     "format": "biome format --write .",
     "check": "biome check .",
+    "test": "biome check . && tsc --noEmit",
     "db:backup": "wrangler d1 export sidali-notes --remote --output d1-backup.sql",
     "prepare": "husky"
   },

@@ -29,5 +29,9 @@ export default function AnimatedNumber({
 		return () => controls.stop();
 	}, [number]);
 
-	return <span {...rest} ref={countRef} />;
+	return (
+		<span {...rest} ref={countRef}>
+			{number}
+		</span>
+	);
 }

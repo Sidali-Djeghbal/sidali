@@ -116,7 +116,9 @@ async function handleBootstrap(db) {
 			 ORDER BY CASE status WHEN 'reading' THEN 0 WHEN 'want' THEN 1 ELSE 2 END,
 			 updated_at DESC`,
 		).all(),
-		db.prepare('SELECT * FROM book_sessions ORDER BY day ASC, created_at ASC').all(),
+		db.prepare('SELECT * FROM book_sessions WHERE day >= ? ORDER BY day ASC, created_at ASC')
+			.bind(new Date(Date.now() - 365 * 86400000).toISOString().slice(0, 10))
+			.all(),
 	]);
 
 	const habits = habitsRes.results || [];
@@ -308,7 +310,7 @@ async function handleGithubCallback(request, env) {
 	const cookies = parseCookies(request);
 
 	const fail = async (message) => {
-		const res = redirect(`${url.origin}/?error=${encodeURIComponent(message)}`);
+		const res = redirect(`${getOrigin(request, env)}/?error=${encodeURIComponent(message)}`);
 		return withCookie(res, OAUTH_STATE_COOKIE, '', 0);
 	};
 
@@ -748,8 +750,10 @@ async function handleBooks(request, db, rest) {
 					 updated_at DESC`,
 				)
 				.all();
+			const sessionCutoff = new Date(Date.now() - 365 * 86400000).toISOString().slice(0, 10);
 			const { results: sessions } = await db
-				.prepare('SELECT * FROM book_sessions ORDER BY day ASC, created_at ASC')
+				.prepare('SELECT * FROM book_sessions WHERE day >= ? ORDER BY day ASC, created_at ASC')
+				.bind(sessionCutoff)
 				.all();
 			const byBook = new Map(results.map((b) => [b.id, []]));
 			for (const s of sessions) {

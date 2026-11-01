@@ -1,7 +1,7 @@
 import Analytics from 'app/components/analytics/analytics';
 import LenisProvider from 'app/components/providers/LenisProvider';
 import ThemeProvider from 'app/components/providers/ThemeProvider';
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import Script from 'next/script';
 import type { ReactNode } from 'react';
 import ThemeSwitch from './components/layouts/theme-switch/theme-switch';
@@ -104,6 +104,11 @@ export const metadata: Metadata = {
 	},
 };
 
+export const viewport: Viewport = {
+	themeColor: '#000000',
+	colorScheme: 'dark light',
+};
+
 interface RootLayoutProps {
 	children: ReactNode;
 }
@@ -113,7 +118,6 @@ export default function RootLayout({ children }: RootLayoutProps) {
 		<html lang='en' suppressHydrationWarning className={mukta.className}>
 			<head>
 				<meta name='msapplication-TileColor' content='#000000' />
-				<meta name='theme-color' content='#000000' />
 				<Script
 					id='gtm-script'
 					strategy='afterInteractive'
