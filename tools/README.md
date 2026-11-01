@@ -1,104 +1,133 @@
-# tools.sidali-djeghbal.dev — personal command center
+# Command Center (tools.sidali-djeghbal.dev)
 
-A single Cloudflare Worker serving a GitHub-OAuth-gated SPA, all persisted to D1:
+A self-hosted personal productivity dashboard and REST API running as a single Cloudflare Worker with a Cloudflare D1 SQLite database and an installable Progressive Web App (PWA).
 
-- **Start** — bookmarks / quick links (drag to reorder)
-- **Tasks** — three-column kanban with drag & drop
-- **Habits** — daily streaks with a GitHub-style heatmap
-- **Books** — a reading log: page-level progress, per-day sessions and streaks
-- **Infra** — one-page links to hosting, data and monitoring dashboards
+## Features
 
-No server, no monitoring, no build step — just static assets + one Worker.
+- **Launcher**: Aggregated daily view showing active tasks, habit completions, reading status, and quick bookmarks.
+- **Start**: Visual bookmark manager with fractional drag-and-drop reordering and automatic favicon extraction.
+- **Tasks**: Three-column Kanban board (`todo`, `doing`, `done`) with drag-and-drop, priority levels, and Markdown notes.
+- **Habits**: Daily habit tracker with streak counters and a 365-day contribution heatmap.
+- **Books**: Reading progress tracker with page-level logging, session history (pages and minutes read), and reading streaks.
+- **Infra**: Quick dashboard links to cloud providers, databases, analytics, and repositories.
+- **Docmost Keep-Alive**: Background cron trigger that periodically pings self-hosted documentation on Render to prevent cold starts.
 
-## Structure
+---
+
+## Architecture & System Design
+
+```mermaid
+flowchart LR
+    Client["Browser / PWA / Android Shell"]
+    Worker["Cloudflare Worker (index.js)"]
+    D1[("Cloudflare D1 (SQLite)")]
+    GitHub["GitHub OAuth API"]
+    Render["Render Docmost Service"]
+
+    Client -->|HTTP Requests| Worker
+    Worker -->|Static Files / PWA Assets| Client
+    Worker -->|Query / Mutation| D1
+    Worker <-->|OAuth Handshake| GitHub
+    Worker -->|Cron: 5-min keep-alive ping| Render
+```
+
+### Components
+
+1. **Edge Worker (`index.js`)**
+   - Handles static file serving via `env.ASSETS` for the single-page application.
+   - Provides a RESTful JSON API (`/api/*`) for data persistence on Cloudflare D1.
+   - Executes scheduled tasks via `scheduled()` handler on a 5-minute cron interval.
+
+2. **Vanilla SPA (`public/`)**
+   - Built with plain ES6 JavaScript, HTML5, and CSS3 without build steps or frameworks.
+   - Lightweight client-side hash router (`#start`, `#tasks`, `#habits`, `#books`, `#infra`).
+   - Drag-and-drop reordering using standard HTML5 Drag and Drop API with fractional positioning.
+
+3. **Service Worker & PWA (`public/sw.js`, `manifest.webmanifest`)**
+   - Installable on desktop and mobile browsers.
+   - Caching strategy:
+     - Static assets: Stale-while-revalidate.
+     - GET `/api/*`: Network-first with cache fallback.
+     - POST / PUT / DELETE and `/api/auth/*`: Always network, never cached.
+
+4. **Security & Authentication**
+   - GitHub OAuth 2.0 flow restricted to usernames defined in `GITHUB_ALLOWED_USERS`.
+   - CSRF protection using short-lived state cookies (`cc_oauth_state`).
+   - Session management via HMAC-SHA256 tokens (`<exp>.<login>.<sig>`) stored in `HttpOnly`, `Secure`, `SameSite=Lax` cookies with a 30-day lifetime.
+   - In-memory rate limiting restricting the OAuth start endpoint to 10 requests per 5 minutes per IP.
+
+---
+
+## Technologies Used
+
+- **Runtime**: Cloudflare Workers (Edge compute, Node.js compatibility).
+- **Database**: Cloudflare D1 (Serverless edge SQLite).
+- **Cryptography**: Web Crypto API (`crypto.subtle` for HMAC-SHA256 and SHA-256).
+- **Frontend**: Vanilla JavaScript (ES6+), Modern CSS (variables, dark/light themes), HTML5.
+- **PWA**: Service Worker API, Web App Manifest.
+- **Tooling**: Wrangler CLI v4 for deployment and local emulation.
+
+---
+
+## Directory Structure
 
 ```
 tools/
-├── index.js              # Worker: static assets + JSON API + auth
-├── wrangler.jsonc        # Worker config (custom domain, D1 binding)
-├── migrations/           # D1 schema
-└── public/               # The SPA (vanilla JS, no framework)
-    ├── index.html
-    ├── styles.css
-    └── app.js
+├── index.js              # Edge Worker: API routing, auth, cron trigger
+├── wrangler.jsonc        # Worker configuration, D1 binding, custom domain
+├── migrations/           # D1 schema migrations
+│   ├── 0001_init.sql
+│   ├── 0002_command_center.sql
+│   ├── 0003_reading_tracker.sql
+│   ├── 0004_books_link.sql
+│   └── 0005_tasks_priority.sql
+└── public/               # Static SPA files (served via env.ASSETS)
+    ├── app.js            # SPA logic, state, and hash router
+    ├── index.html        # HTML shell and dialogs
+    ├── styles.css        # Stylesheet
+    ├── sw.js             # Service worker
+    ├── manifest.webmanifest
+    └── icons/            # App icons
 ```
 
-## API
+---
 
-| Endpoint                        | Methods        |
-| ------------------------------- | -------------- |
-| `/api/auth/github`              | GET (starts OAuth) |
-| `/api/auth/github/callback`     | GET (OAuth callback) |
-| `/api/logout`                   | POST           |
-| `/api/session`                  | GET            |
-| `/api/bookmarks[/:id]`          | GET POST PUT DELETE |
-| `/api/tasks[/:id]`              | GET POST PUT DELETE |
-| `/api/habits[/:id]`             | GET POST PUT DELETE |
-| `/api/habits/:id/toggle`        | POST `{ day }` |
-| `/api/books[/:id]`              | GET POST PUT DELETE |
-| `/api/books/:id/sessions`       | POST `{ day, pages, minutes }` |
-| `/api/books/:id/sessions/:sid`  | DELETE |
+## API Reference
 
-Auth is GitHub OAuth. Only the logins in `GITHUB_ALLOWED_USERS`
-(comma-separated) can sign in; a signed, expiring HttpOnly cookie
-(30 days) is issued on success. OAuth start is rate-limited per IP.
+| Endpoint | Method | Description |
+| :--- | :--- | :--- |
+| `/api/auth/github` | GET | Initiates GitHub OAuth flow with anti-CSRF state |
+| `/api/auth/github/callback` | GET | OAuth callback; validates user allowlist and issues session |
+| `/api/logout` | POST | Clears session cookie |
+| `/api/session` | GET | Validates session and returns current user |
+| `/api/bookmarks[/:id]` | GET, POST, PUT, DELETE | Manage bookmarks with fractional ordering |
+| `/api/tasks[/:id]` | GET, POST, PUT, DELETE | Manage Kanban tasks (status, priority, position) |
+| `/api/habits[/:id]` | GET, POST, PUT, DELETE | Manage habit definitions and archive states |
+| `/api/habits/:id/toggle` | POST | Toggle completion for a given date (`{ day: "YYYY-MM-DD" }`) |
+| `/api/books[/:id]` | GET, POST, PUT, DELETE | Manage reading list and page progress |
+| `/api/books/:id/sessions` | POST | Log a reading session (`{ day, pages, minutes }`) |
+| `/api/books/:id/sessions/:sid` | DELETE | Delete a specific reading session |
 
-## Secrets
+---
 
-```sh
-npx wrangler secret put GITHUB_CLIENT_ID
-npx wrangler secret put GITHUB_CLIENT_SECRET
-npx wrangler secret put GITHUB_ALLOWED_USERS   # e.g. Sidali-Djeghbal
-```
+## Local Development
 
-Create a GitHub OAuth App at github.com/settings/developers with:
+### 1. Configure `.dev.vars`
 
-- Homepage URL: `https://tools.sidali-djeghbal.dev`
-- Authorization callback URL: `https://tools.sidali-djeghbal.dev/api/auth/github/callback`
+Create `tools/.dev.vars` (gitignored):
 
-For local dev, create `tools/.dev.vars` (gitignored):
-
-```
-GITHUB_CLIENT_ID=dev-client-id
-GITHUB_CLIENT_SECRET=dev-client-secret
-GITHUB_ALLOWED_USERS=Sidali-Djeghbal
-```
-
-## Local development
-
-### 1 — Create `.dev.vars` (first time only)
-
-Create `tools/.dev.vars` (already gitignored) with your local credentials:
-
-```sh
-GITHUB_CLIENT_ID=your-local-github-client-id
-GITHUB_CLIENT_SECRET=your-local-github-client-secret
-GITHUB_ALLOWED_USERS=Sidali-Djeghbal
+```ini
+GITHUB_CLIENT_ID=your-local-client-id
+GITHUB_CLIENT_SECRET=your-local-client-secret
+GITHUB_ALLOWED_USERS=your-github-username
 LOCAL_ORIGIN=http://localhost:8787
 ```
 
-> **Why `LOCAL_ORIGIN`?** Wrangler dev sets `request.url` to the production
-> domain defined in `wrangler.jsonc` routes, which causes GitHub OAuth to
-> redirect back to `tools.sidali-djeghbal.dev` instead of `localhost:8787`.
-> Setting `LOCAL_ORIGIN` overrides the base URL used for the OAuth redirect URI.
+Note: `LOCAL_ORIGIN` ensures GitHub redirects back to `http://localhost:8787` instead of the production domain during local development. Register a dedicated local OAuth app in GitHub Developer Settings pointing to `http://localhost:8787/api/auth/github/callback`.
 
+### 2. Apply Migrations to Local D1
 
-To make GitHub OAuth work locally, create a **separate** GitHub OAuth App at
-[github.com/settings/developers](https://github.com/settings/developers) with:
-
-- Homepage URL: `http://localhost:8787`
-- Authorization callback URL: `http://localhost:8787/api/auth/github/callback`
-
-Then use its `Client ID` and `Client Secret` in `.dev.vars`.
-
-> **Note:** The placeholder values (`dev-client-id` / `dev-client-secret`) let
-> the server start, but OAuth login will fail. You need a real local OAuth App
-> to actually sign in.
-
-### 2 — Apply migrations (first time only)
-
-```sh
-cd tools
+```bash
 npx wrangler d1 execute sidali-notes --local --file migrations/0001_init.sql
 npx wrangler d1 execute sidali-notes --local --file migrations/0002_command_center.sql
 npx wrangler d1 execute sidali-notes --local --file migrations/0003_reading_tracker.sql
@@ -106,22 +135,37 @@ npx wrangler d1 execute sidali-notes --local --file migrations/0004_books_link.s
 npx wrangler d1 execute sidali-notes --local --file migrations/0005_tasks_priority.sql
 ```
 
-### 3 — Start the dev server
+### 3. Start Local Development Server
 
-```sh
+```bash
 npx wrangler dev --port 8787
 ```
 
-Open **[http://localhost:8787](http://localhost:8787)** in your browser.
+Navigate to `http://localhost:8787`.
 
-## Deploy
+---
 
-```sh
-cd tools
-npx wrangler d1 execute sidali-notes --remote --file migrations/0002_command_center.sql  # once
-npx wrangler d1 execute sidali-notes --remote --file migrations/0003_reading_tracker.sql  # once
-npx wrangler deploy
+## Production Deployment
+
+### 1. Set Production Secrets
+
+```bash
+npx wrangler secret put GITHUB_CLIENT_ID
+npx wrangler secret put GITHUB_CLIENT_SECRET
+npx wrangler secret put GITHUB_ALLOWED_USERS
 ```
 
-The `notes` table from the old notes app is left in the database
-(data preserved); only the code was removed.
+### 2. Apply Migrations to Remote D1
+
+```bash
+npx wrangler d1 execute sidali-notes --remote --file migrations/0002_command_center.sql
+npx wrangler d1 execute sidali-notes --remote --file migrations/0003_reading_tracker.sql
+npx wrangler d1 execute sidali-notes --remote --file migrations/0004_books_link.sql
+npx wrangler d1 execute sidali-notes --remote --file migrations/0005_tasks_priority.sql
+```
+
+### 3. Deploy Worker
+
+```bash
+npx wrangler deploy
+```
