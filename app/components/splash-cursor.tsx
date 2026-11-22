@@ -3,17 +3,17 @@ import classNames from 'classnames';
 import { useEffect, useRef } from 'react';
 
 function SplashCursor({
-	SIM_RESOLUTION = 128,
-	DYE_RESOLUTION = 800,
-	CAPTURE_RESOLUTION = 512,
+	SIM_RESOLUTION = 64,
+	DYE_RESOLUTION = 512,
+	CAPTURE_RESOLUTION = 256,
 	DENSITY_DISSIPATION = 3.5,
 	VELOCITY_DISSIPATION = 2,
 	PRESSURE = 0.1,
-	PRESSURE_ITERATIONS = 20,
+	PRESSURE_ITERATIONS = 10,
 	CURL = 3,
 	SPLAT_RADIUS = 0.2,
 	SPLAT_FORCE = 6000,
-	SHADING = true,
+	SHADING = false,
 	COLOR_UPDATE_SPEED = 10,
 	BACK_COLOR = { r: 0, g: 0, b: 0 },
 	TRANSPARENT = true,
@@ -74,17 +74,19 @@ function SplashCursor({
 		}
 
 		const config = {
-			SIM_RESOLUTION: isMobile ? 96 : SIM_RESOLUTION,
-			DYE_RESOLUTION: isMobile ? 512 : DYE_RESOLUTION,
+			SIM_RESOLUTION: isMobile ? Math.min(SIM_RESOLUTION, 48) : SIM_RESOLUTION,
+			DYE_RESOLUTION: isMobile ? Math.min(DYE_RESOLUTION, 384) : DYE_RESOLUTION,
 			CAPTURE_RESOLUTION: isMobile ? 256 : CAPTURE_RESOLUTION,
 			DENSITY_DISSIPATION,
 			VELOCITY_DISSIPATION,
 			PRESSURE,
-			PRESSURE_ITERATIONS,
+			PRESSURE_ITERATIONS: isMobile
+				? Math.min(PRESSURE_ITERATIONS, 8)
+				: PRESSURE_ITERATIONS,
 			CURL,
 			SPLAT_RADIUS,
 			SPLAT_FORCE,
-			SHADING,
+			SHADING: isMobile ? false : SHADING,
 			COLOR_UPDATE_SPEED,
 			PAUSED: false,
 			BACK_COLOR,
@@ -93,7 +95,13 @@ function SplashCursor({
 
 		const pointers = [new Pointer()];
 
-		const { gl, ext } = getWebGLContext(canvas);
+		let webgl: ReturnType<typeof getWebGLContext>;
+		try {
+			webgl = getWebGLContext(canvas);
+		} catch {
+			return;
+		}
+		const { gl, ext } = webgl;
 		if (!ext.supportLinearFiltering) {
 			config.DYE_RESOLUTION = 256;
 			config.SHADING = false;
@@ -939,6 +947,7 @@ function SplashCursor({
 		}
 
 		updateKeywords();
+		resizeCanvas();
 		initFramebuffers();
 		let lastUpdateTime = Date.now();
 		let colorUpdateTimer = 0.0;
@@ -961,12 +970,13 @@ function SplashCursor({
 		let rafId = 0;
 		let running = false;
 		let lastActivity = Date.now();
-		const IDLE_TIMEOUT = isTouchDevice ? Number.POSITIVE_INFINITY : 3000;
+		const IDLE_TIMEOUT = 3000;
 
 		function start() {
 			if (running) return;
 			running = true;
 			lastActivity = Date.now();
+			lastUpdateTime = Date.now();
 			rafId = requestAnimationFrame(updateFrame);
 		}
 
@@ -1362,7 +1372,8 @@ function SplashCursor({
 		}
 
 		function scaleByPixelRatio(input: number): number {
-			const pixelRatio = window.devicePixelRatio || 1;
+			const maxDpr = isMobile ? 1 : 1.5;
+			const pixelRatio = Math.min(window.devicePixelRatio || 1, maxDpr);
 			return Math.floor(input * pixelRatio);
 		}
 
@@ -1473,20 +1484,18 @@ function SplashCursor({
 		const handleVisibilityChange = () => {
 			if (document.hidden) {
 				stop();
-			} else {
-				start();
 			}
 		};
 
-		// Attach event listeners to container
+		// Attach event listeners to container; simulation wakes on first interaction
 		container.addEventListener('mousedown', handleMouseDown);
 		container.addEventListener('mousemove', handleMouseMove);
-		container.addEventListener('touchstart', handleTouchStart);
-		container.addEventListener('touchmove', handleTouchMove, false);
-		container.addEventListener('touchend', handleTouchEnd);
+		container.addEventListener('touchstart', handleTouchStart, {
+			passive: true,
+		});
+		container.addEventListener('touchmove', handleTouchMove, { passive: true });
+		container.addEventListener('touchend', handleTouchEnd, { passive: true });
 		document.addEventListener('visibilitychange', handleVisibilityChange);
-
-		start();
 
 		// Cleanup
 		return () => {

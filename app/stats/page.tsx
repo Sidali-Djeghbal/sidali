@@ -7,6 +7,8 @@ import WakatimeSkeleton from '../components/wakatime/wakatime-skeleton';
 
 const siteUrl = 'https://sidali-djeghbal.dev';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
 	title: 'Stats',
 	description:

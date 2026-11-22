@@ -1,5 +1,4 @@
 import Analytics from 'app/components/analytics/analytics';
-import LenisProvider from 'app/components/providers/LenisProvider';
 import ThemeProvider from 'app/components/providers/ThemeProvider';
 import type { Metadata, Viewport } from 'next';
 import Script from 'next/script';
@@ -14,11 +13,11 @@ const siteUrl = 'https://sidali-djeghbal.dev';
 export const metadata: Metadata = {
 	metadataBase: new URL(siteUrl),
 	title: {
-		default: 'Sidali DJEGHBAL | Frontend & UI Engineer',
+		default: 'Sidali DJEGHBAL | Software Engineer (Frontend-Focused)',
 		template: '%s | Sidali DJEGHBAL',
 	},
 	description:
-		"I'm Sidali DJEGHBAL — a Frontend & UI Engineer specializing in interactive React, Next.js, and TypeScript applications, data-intensive dashboards, and accessible multilingual/RTL interfaces. Explore my projects, experience, and tools.",
+		"I'm Sidali DJEGHBAL — a frontend-focused Software Engineer with full-stack experience, building interactive React, Next.js, and TypeScript applications, data-intensive dashboards, and accessible multilingual/RTL interfaces.",
 	applicationName: 'Sidali DJEGHBAL',
 	authors: [{ name: 'Sidali DJEGHBAL', url: siteUrl }],
 	creator: 'Sidali DJEGHBAL',
@@ -27,7 +26,10 @@ export const metadata: Metadata = {
 	keywords: [
 		'Sidali DJEGHBAL',
 		'sidali djeghbal',
+		'Software Engineer',
+		'Frontend-Focused Software Engineer',
 		'Frontend & UI Engineer',
+		'Full-Stack Developer',
 		'frontend engineer',
 		'UI engineer',
 		'React 19',
@@ -38,7 +40,6 @@ export const metadata: Metadata = {
 		'Vitest',
 		'Playwright',
 		'web developer',
-		'software engineer',
 		'portfolio',
 		'Algerian developer',
 		'open source',
@@ -47,25 +48,25 @@ export const metadata: Metadata = {
 		type: 'website',
 		url: siteUrl,
 		siteName: 'Sidali DJEGHBAL',
-		title: 'Sidali DJEGHBAL | Frontend & UI Engineer',
+		title: 'Sidali DJEGHBAL | Software Engineer (Frontend-Focused)',
 		description:
-			'Frontend & UI Engineer specializing in interactive React, Next.js, and TypeScript apps, data-intensive dashboards, and accessible RTL/LTR interfaces.',
+			'Frontend-focused Software Engineer with full-stack experience building interactive React, Next.js, and TypeScript apps, data-intensive dashboards, and accessible RTL/LTR interfaces.',
 		locale: 'en_US',
 		images: [
 			{
 				url: '/og-image.png',
 				width: 1200,
 				height: 630,
-				alt: 'Sidali DJEGHBAL — Frontend & UI Engineer',
+				alt: 'Sidali DJEGHBAL — Software Engineer (Frontend-Focused)',
 				type: 'image/png',
 			},
 		],
 	},
 	twitter: {
 		card: 'summary_large_image',
-		title: 'Sidali DJEGHBAL | Frontend & UI Engineer',
+		title: 'Sidali DJEGHBAL | Software Engineer (Frontend-Focused)',
 		description:
-			'Frontend & UI Engineer specializing in interactive React, Next.js, and TypeScript apps, data-intensive dashboards, and accessible RTL/LTR interfaces.',
+			'Frontend-focused Software Engineer with full-stack experience building interactive React, Next.js, and TypeScript apps, data-intensive dashboards, and accessible RTL/LTR interfaces.',
 		images: ['/og-image.png'],
 	},
 	robots: {
@@ -125,7 +126,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
 				<meta name='msapplication-TileColor' content='#000000' />
 				<Script
 					id='gtm-script'
-					strategy='afterInteractive'
+					strategy='lazyOnload'
 					// biome-ignore lint/security/noDangerouslySetInnerHtml: Third-party analytics
 					dangerouslySetInnerHTML={{
 						__html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-58JSZ9S4');`,
@@ -134,11 +135,11 @@ export default function RootLayout({ children }: RootLayoutProps) {
 				<Script
 					async
 					src='https://www.googletagmanager.com/gtag/js?id=G-W5DR5CRNJK'
-					strategy='afterInteractive'
+					strategy='lazyOnload'
 				/>
 				<Script
 					id='gtag-config'
-					strategy='afterInteractive'
+					strategy='lazyOnload'
 					// biome-ignore lint/security/noDangerouslySetInnerHtml: Third-party analytics config
 					dangerouslySetInnerHTML={{
 						__html: `window.dataLayer = window.dataLayer || [];
@@ -163,11 +164,9 @@ gtag('config', 'G-W5DR5CRNJK');`,
 					defaultTheme='dark'
 					themes={['dark', 'light']}
 				>
-					<LenisProvider>
-						<ThemeSwitch />
-						<JsonLd />
-						{children}
-					</LenisProvider>
+					<ThemeSwitch />
+					<JsonLd />
+					{children}
 					{process.env.NODE_ENV === 'production' && <Analytics />}
 				</ThemeProvider>
 			</body>

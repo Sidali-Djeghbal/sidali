@@ -25,7 +25,7 @@ Or copy `command-center.apk` directly to your Android device via USB / Google Dr
 ## Rebuilding the APK
 ```bash
 cd android-app
-bun x cap sync android
+pnpm exec cap sync android
 cd android
 export JAVA_HOME=/usr/lib/jvm/java-21-openjdk
 export ANDROID_HOME=/home/unknown/Android/Sdk

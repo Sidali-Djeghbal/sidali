@@ -6,9 +6,9 @@ const personSchema = {
 	name: 'Sidali DJEGHBAL',
 	url: siteUrl,
 	image: `${siteUrl}/og-image.png`,
-	jobTitle: 'Frontend & UI Engineer',
+	jobTitle: 'Software Engineer (Frontend-Focused)',
 	description:
-		'Frontend & UI Engineer specializing in interactive React, Next.js, and TypeScript applications, data-intensive dashboards, and accessible multilingual/RTL web interfaces.',
+		'Frontend-focused Software Engineer with full-stack experience specializing in interactive React, Next.js, and TypeScript applications, data-intensive dashboards, and accessible multilingual/RTL web interfaces.',
 	email: 'mailto:connect@sidali-djeghbal.dev',
 	address: {
 		'@type': 'PostalAddress',
@@ -33,11 +33,14 @@ const personSchema = {
 		'https://github.com/sidali-djeghbal',
 	],
 	knowsAbout: [
+		'Software Engineering',
 		'Frontend Engineering',
+		'Full-Stack Web Development',
 		'UI Engineering',
 		'React 19',
 		'Next.js',
 		'TypeScript',
+		'Backend APIs',
 		'RTL/LTR Web Interfaces',
 		'WCAG Accessibility',
 		'Vitest',
@@ -53,7 +56,7 @@ const websiteSchema = {
 	name: 'Sidali DJEGHBAL',
 	url: siteUrl,
 	description:
-		'Frontend & UI Engineer specializing in interactive React, Next.js, and TypeScript applications, data-intensive dashboards, and accessible multilingual/RTL web interfaces.',
+		'Frontend-focused Software Engineer with full-stack experience specializing in interactive React, Next.js, and TypeScript applications, data-intensive dashboards, and accessible multilingual/RTL web interfaces.',
 	inLanguage: 'en',
 	author: {
 		'@type': 'Person',

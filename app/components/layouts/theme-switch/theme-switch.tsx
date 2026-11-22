@@ -1,6 +1,5 @@
 'use client';
 
-import { motion } from 'motion/react';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 import { MoonIcon } from '../icons/moon-icon';
@@ -28,23 +27,18 @@ const ThemeSwitch = () => {
 
 	return (
 		<div className='absolute top-4 right-4 z-11'>
-			<motion.button
+			<button
 				aria-label='Toggle Dark Mode'
 				type='button'
-				whileTap={{
-					scale: 0.95,
-					rotate: 360,
-					transition: { duration: 0.2 },
-				}}
-				whileHover={{ scale: 1.1 }}
 				onClick={toggleTheme}
+				className='cursor-pointer transition-transform duration-200 hover:scale-110 active:scale-95'
 			>
 				{mounted && (theme === 'dark' || resolvedTheme === 'dark') ? (
 					<SunMediumIcon className='h-9 w-9' />
 				) : (
 					<MoonIcon className='h-9 w-9' />
 				)}
-			</motion.button>
+			</button>
 		</div>
 	);
 };

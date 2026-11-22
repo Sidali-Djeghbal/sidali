@@ -22,13 +22,10 @@
     "@tailwindcss/postcss": "^4.0.15",
     "@types/node": "24.10.1",
     "@types/react": "19.2.14",
-    "@vercel/analytics": "2.0.1",
-    "@vercel/speed-insights": "^1.0.2",
     "classnames": "2.5.1",
     "date-fns": "^4.1.0",
     "gsap": "3.13.0",
     "husky": "9.1.7",
-    "lenis": "^1.2.3",
     "lint-staged": "16.4.0",
     "logrocket": "12.1.0",
     "logrocket-react": "7",
@@ -49,7 +46,7 @@
       "biome check --write --no-errors-on-unmatched"
     ]
   },
-  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e",
+  "packageManager": "pnpm@11.20.0",
   "devDependencies": {
     "@biomejs/biome": "2.4.4",
     "@mdx-js/loader": "^3.1.1",

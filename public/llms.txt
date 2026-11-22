@@ -1,6 +1,6 @@
 # Sidali DJEGHBAL
 
-> Sidali DJEGHBAL is a Frontend & UI Engineer specializing in high-interactivity React, Next.js, and TypeScript applications, data-intensive dashboards, and accessible multilingual/RTL web interfaces. He ships end-to-end tested production web platforms, visual block editors, and custom CMS tools for remote teams.
+> Sidali DJEGHBAL is a frontend-focused Software Engineer with full-stack experience, specializing in high-interactivity React, Next.js, and TypeScript applications, data-intensive dashboards, backend APIs, and accessible multilingual/RTL web interfaces. He ships end-to-end tested production web platforms, visual block editors, and custom CMS tools for remote teams.
 
 ## Key pages
 
@@ -9,11 +9,11 @@
 - [Experience](https://sidali-djeghbal.dev/experience): Work history, open-source maintenance, education, and downloadable CV.
 - [Uses](https://sidali-djeghbal.dev/uses): Daily tools, software, and technical stack.
 - [Stats](https://sidali-djeghbal.dev/stats): Live personal stats gathered from public APIs (GitHub contributions, WakaTime).
-- [CV (PDF)](https://sidali-djeghbal.dev/Sidali_Djeghbal_Frontend_Engineer.pdf): Downloadable Frontend & UI Engineer resume.
+- [CV (PDF)](https://sidali-djeghbal.dev/Sidali_Djeghbal_Frontend_Engineer.pdf): Downloadable resume.
 
 ## Contact
 
-- Location: Algeria (UTC+1) · Available for remote frontend roles
+- Location: Algeria (UTC+1) · Available for remote software & frontend roles
 - Email: connect@sidali-djeghbal.dev
 - LinkedIn: https://www.linkedin.com/in/sidali-djeghbal
 - GitHub: https://github.com/Sidali-Djeghbal
@@ -21,11 +21,11 @@
 ## Profile
 
 - Name: Sidali DJEGHBAL
-- Role: Frontend & UI Engineer
+- Role: Software Engineer (Frontend-Focused · Full-Stack Experience)
 - Current Position: Frontend Engineer (Full Stack) at Algerian Tech Makers (tech branch of Bunian) · Remote (Mar 2026 – Present)
 - Languages: English, French, Arabic
 - Education: State Engineer Degree (Ingénieur d'État — Master's Equivalent) in Computer Science (AI Specialization), University of 8th May 1945 at Guelma, Algeria (Oct 2023 – Expected Jun 2028, 4th Year)
-- Focus areas: React 19, Next.js (App Router / RSC), TypeScript, Tailwind CSS, RTL/LTR layout, WCAG accessibility, TanStack Query, Zod, Vitest, Playwright, Cloudflare Workers.
+- Focus areas: React 19, Next.js (App Router / RSC), TypeScript, Tailwind CSS, RTL/LTR layout, WCAG accessibility, TanStack Query, Zod, FastAPI, PostgreSQL, Vitest, Playwright, Cloudflare Workers.
 
 ## Experience
 

@@ -2,7 +2,7 @@
 
 import classNames from 'classnames';
 import { AnimatePresence, motion } from 'motion/react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import ActivityTooltip from './activity-tooltip';
 import type { ContributionCalendar } from './github';
 
@@ -20,20 +20,38 @@ interface HoveredCell {
 export default function Calendar({ contributions }: Props) {
 	const { weeks, months, colors } = contributions;
 	const [hoveredCell, setHoveredCell] = useState<HoveredCell | null>(null);
+	const gridRef = useRef<HTMLElement>(null);
 
-	const handleCellMouseEnter = (
-		e: React.MouseEvent<HTMLSpanElement>,
-		count: number,
-		date: Date,
-	) => {
-		const cellRect = e.currentTarget.getBoundingClientRect();
-		setHoveredCell({
-			count,
-			date,
-			x: cellRect.left + cellRect.width / 2,
-			y: cellRect.top,
-		});
-	};
+	useEffect(() => {
+		const grid = gridRef.current;
+		if (!grid) return;
+
+		const handleMouseOver = (e: MouseEvent) => {
+			const target = (e.target as HTMLElement | null)?.closest<HTMLElement>(
+				'[data-date]',
+			);
+			if (!target) return;
+			const date = target.dataset.date;
+			const count = Number(target.dataset.count);
+			if (!date || Number.isNaN(count)) return;
+			const cellRect = target.getBoundingClientRect();
+			setHoveredCell({
+				count,
+				date: new Date(date),
+				x: cellRect.left + cellRect.width / 2,
+				y: cellRect.top,
+			});
+		};
+
+		const handleMouseLeave = () => setHoveredCell(null);
+
+		grid.addEventListener('mouseover', handleMouseOver);
+		grid.addEventListener('mouseleave', handleMouseLeave);
+		return () => {
+			grid.removeEventListener('mouseover', handleMouseOver);
+			grid.removeEventListener('mouseleave', handleMouseLeave);
+		};
+	}, []);
 
 	return (
 		<div className='relative flex flex-col space-y-2 w-[calc(100%-53px)] md:w-160 lg:w-200'>
@@ -50,9 +68,9 @@ export default function Calendar({ contributions }: Props) {
 			</ul>
 
 			<section
+				ref={gridRef}
 				aria-label='Contribution grid'
 				className='flex justify-start gap-0.75 overflow-hidden'
-				onMouseLeave={() => setHoveredCell(null)}
 			>
 				{weeks?.map((week) => (
 					<div key={week.firstDay}>
@@ -60,29 +78,11 @@ export default function Calendar({ contributions }: Props) {
 							const backgroundColor =
 								contribution.contributionCount > 0 && contribution.color;
 
-							const randomizedDelay =
-								Math.random() * week.contributionDays.length * 0.2;
-
 							return (
-								<motion.span
+								<span
 									key={contribution.date}
-									initial='initial'
-									animate='animate'
-									variants={{
-										initial: { opacity: 0, translateY: -20 },
-										animate: {
-											opacity: 1,
-											translateY: 0,
-											transition: { delay: randomizedDelay },
-										},
-									}}
-									onMouseEnter={(e) =>
-										handleCellMouseEnter(
-											e,
-											contribution.contributionCount,
-											new Date(contribution.date),
-										)
-									}
+									data-date={contribution.date}
+									data-count={contribution.contributionCount}
 									className='my-0.5 block h-3 w-3 rounded-xs bg-neutral-200 dark:bg-[#161B22] cursor-default'
 									style={backgroundColor ? { backgroundColor } : undefined}
 								/>

@@ -7,7 +7,7 @@ import { merryWeather } from '../fonts';
 
 const siteUrl = 'https://sidali-djeghbal.dev';
 const pageDescription =
-	'Work experience, open-source maintenance, and computer science education of Sidali DJEGHBAL — Frontend & UI Engineer.';
+	'Work experience, open-source maintenance, and computer science education of Sidali DJEGHBAL — Software Engineer (Frontend-Focused).';
 
 export const metadata: Metadata = {
 	title: 'Experience',
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
 				url: '/og-image.png',
 				width: 1200,
 				height: 630,
-				alt: 'Sidali DJEGHBAL — Frontend & UI Engineer',
+				alt: 'Sidali DJEGHBAL — Software Engineer (Frontend-Focused)',
 				type: 'image/png',
 			},
 		],
@@ -107,14 +107,15 @@ export default function ExperiencePage() {
 			<div className='flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between'>
 				<div className='space-y-2'>
 					<h1 className='text-2xl font-bold md:text-4xl'>
-						Frontend &amp; UI Engineer
+						Software Engineer (Frontend-Focused)
 					</h1>
 					<p className='max-w-2xl text-lg leading-7 text-gray-600 dark:text-gray-400'>
-						Shipping interactive React, Next.js, and TypeScript platforms,
-						visual block editors, and custom CMS tools for remote teams.
+						Frontend-focused with full-stack experience — shipping interactive
+						React, Next.js, and TypeScript platforms, backend APIs, visual block
+						editors, and custom CMS tools.
 					</p>
 					<p className='text-sm text-gray-600 dark:text-gray-400'>
-						Algeria (UTC+1) · Available for remote frontend roles
+						Algeria (UTC+1) · Available for remote software &amp; frontend roles
 					</p>
 				</div>
 				<a

@@ -31,13 +31,15 @@ export default function Hero() {
 						</h1>
 						<section className='relative z-10 space-y-2'>
 							<p className='text-base text-left md:text-justify'>
-								I&apos;m Sidali DJEGHBAL — a Frontend &amp; UI Engineer
-								specializing in interactive React, Next.js, and TypeScript
-								applications, data-intensive dashboards, and accessible
-								multilingual/RTL interfaces.
+								I&apos;m Sidali DJEGHBAL — a Software Engineer
+								(frontend-focused) with full-stack experience, specializing in
+								interactive React, Next.js, and TypeScript applications,
+								data-intensive dashboards, and accessible multilingual/RTL
+								interfaces.
 							</p>
 							<p className='text-xs text-gray-600 dark:text-gray-400'>
-								Algeria (UTC+1) · Available for remote frontend roles
+								Algeria (UTC+1) · Available for remote software &amp; frontend
+								roles
 							</p>
 						</section>
 						<section className='relative z-10 flex flex-col gap-6 items-start text-sm md:flex-row md:flex-wrap md:items-center'>

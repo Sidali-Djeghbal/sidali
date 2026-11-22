@@ -21,14 +21,13 @@ export default function Projects() {
 				<motion.div
 					key={project.title}
 					initial={{
-						scale: prefersReducedMotion ? 1 : 0.8,
+						scale: prefersReducedMotion ? 1 : 0.97,
 						opacity: 0,
-						filter: prefersReducedMotion ? 'blur(0px)' : 'blur(2px)',
 					}}
-					animate={{ scale: 1, opacity: 1, filter: 'blur(0px)' }}
+					animate={{ scale: 1, opacity: 1 }}
 					transition={{
-						duration: prefersReducedMotion ? 0.2 : 0.6,
-						delay: prefersReducedMotion ? 0 : index / 10,
+						duration: prefersReducedMotion ? 0.15 : 0.25,
+						delay: prefersReducedMotion ? 0 : Math.min(index * 0.03, 0.18),
 					}}
 				>
 					<ProjectItem

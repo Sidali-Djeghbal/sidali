@@ -1,59 +1,25 @@
 import { cache } from 'react';
 import type { UserStats, WakaTimeAllTimeStats } from './types';
 
-const WAKATIME_ENDPOINT = 'https://wakatime.com/api/v1';
+const WAKATIME_ENDPOINT = 'https://api.wakatime.com/api/v1';
 
 const getWakatimeToken = cache(() => {
-	const secret_key = process.env.WAKATIME_SECRET_KEY;
+	const secretKey = process.env.WAKATIME_SECRET_KEY?.trim();
 
-	if (!secret_key) {
+	if (!secretKey) {
 		return null;
 	}
 
-	return Buffer.from(`${secret_key} :`).toString('base64');
+	return Buffer.from(secretKey).toString('base64');
 });
-
-const emptyAllTimeStats: WakaTimeAllTimeStats = {
-	daily_average: 0,
-	decimal: '0',
-	digital: '0:00',
-	is_up_to_date: false,
-	percent_calculated: 0,
-	range: {
-		end: '',
-		end_date: '',
-		end_text: '',
-		start: '',
-		start_date: '',
-		start_text: '',
-		timezone: '',
-	},
-	text: '0 hrs',
-	timeout: 0,
-	total_seconds: 0,
-};
-
-const emptyUserStats: UserStats = {
-	best_day: {
-		date: new Date().toISOString().split('T')[0],
-		text: '0 secs',
-		total_seconds: 0,
-	},
-	human_readable_daily_average: '0 hrs',
-	human_readable_total: '0 hrs',
-	daily_average: 0,
-	total_seconds: 0,
-	total_seconds_including_other_language: 0,
-	projects: [],
-};
 
 // https://wakatime.com/developers#all_time_since_today
 export const getAllTimeStats = cache(
-	async (): Promise<WakaTimeAllTimeStats> => {
+	async (): Promise<WakaTimeAllTimeStats | null> => {
 		const token = getWakatimeToken();
 
 		if (!token) {
-			return emptyAllTimeStats;
+			return null;
 		}
 
 		try {
@@ -64,29 +30,34 @@ export const getAllTimeStats = cache(
 						Authorization: `Basic ${token}`,
 					},
 					next: { revalidate: 3600 },
+					signal: AbortSignal.timeout(5000),
 				},
 			);
 
 			if (!response.ok) {
-				console.error('Error:', response.status, await response.text());
-				return emptyAllTimeStats;
+				console.error(
+					'WakaTime error:',
+					response.status,
+					await response.text(),
+				);
+				return null;
 			}
 
 			const result = await response.json();
-			return result.data ?? emptyAllTimeStats;
+			return result.data ?? null;
 		} catch (error) {
 			console.error('Failed to fetch WakaTime all-time stats:', error);
-			return emptyAllTimeStats;
+			return null;
 		}
 	},
 );
 
 // https://wakatime.com/developers#stats
-export const getStatsThisWeek = cache(async (): Promise<UserStats> => {
+export const getStatsThisWeek = cache(async (): Promise<UserStats | null> => {
 	const token = getWakatimeToken();
 
 	if (!token) {
-		return emptyUserStats;
+		return null;
 	}
 
 	try {
@@ -97,18 +68,19 @@ export const getStatsThisWeek = cache(async (): Promise<UserStats> => {
 					Authorization: `Basic ${token}`,
 				},
 				next: { revalidate: 3600 },
+				signal: AbortSignal.timeout(5000),
 			},
 		);
 
 		if (!response.ok) {
-			console.error('Error:', response.status, await response.text());
-			return emptyUserStats;
+			console.error('WakaTime error:', response.status, await response.text());
+			return null;
 		}
 
 		const result = await response.json();
-		return result.data ?? emptyUserStats;
+		return result.data ?? null;
 	} catch (error) {
 		console.error('Failed to fetch WakaTime weekly stats:', error);
-		return emptyUserStats;
+		return null;
 	}
 });

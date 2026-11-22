@@ -20,6 +20,10 @@ const nextConfig: NextConfig = {
 		turbopackFileSystemCacheForDev: true,
 	},
 	async rewrites() {
+		if (!umami_url) {
+			return [];
+		}
+
 		return [
 			{
 				source: '/umami.js',

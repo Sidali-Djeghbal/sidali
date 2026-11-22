@@ -116,6 +116,7 @@ export default function ProjectPreview({ modal, projects }: ProjectModalProps) {
 									src={`/static/images/project/${src}`}
 									width={318}
 									height={218}
+									loading='lazy'
 									alt={project.title}
 								/>
 							</div>

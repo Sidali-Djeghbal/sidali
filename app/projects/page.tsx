@@ -26,7 +26,7 @@ export const metadata: Metadata = {
 				url: '/og-image.png',
 				width: 1200,
 				height: 630,
-				alt: 'Sidali DJEGHBAL — Frontend & UI Engineer',
+				alt: 'Sidali DJEGHBAL — Software Engineer (Frontend-Focused)',
 				type: 'image/png',
 			},
 		],

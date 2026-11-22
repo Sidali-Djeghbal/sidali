@@ -1,46 +1,56 @@
 # sidali
 
-Monorepo containing my personal portfolio, a serverless command center, a native Android companion app, and self-hosted documentation infrastructure.
+[![Next.js](https://img.shields.io/badge/Next.js-16.2-000000?logo=nextdotjs&logoColor=white)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
+[![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers_%2B_D1-F38020?logo=cloudflare&logoColor=white)](https://workers.cloudflare.com/)
+[![Capacitor](https://img.shields.io/badge/Capacitor-8-119EFF?logo=capacitor&logoColor=white)](https://capacitorjs.com/)
+[![pnpm](https://img.shields.io/badge/pnpm-11-F69220?logo=pnpm&logoColor=white)](https://pnpm.io/)
+[![Biome](https://img.shields.io/badge/Biome-2.4-60A5FA?logo=biome&logoColor=white)](https://biomejs.dev/)
 
-- **Portfolio**: [sidali-djeghbal.dev](https://sidali-djeghbal.dev) — Next.js 16 app deployed on Cloudflare Workers via OpenNext.
-- **Command Center**: [tools.sidali-djeghbal.dev](https://tools.sidali-djeghbal.dev) — Cloudflare Worker + D1 SQLite database serving a vanilla JS single-page app and REST API.
-- **Android App**: Native Android container built with Capacitor 8 for the command center.
-- **Docs**: [docs.sidali-djeghbal.dev](https://docs.sidali-djeghbal.dev) — Self-hosted Docmost instance on Render.
+Monorepo containing my personal portfolio, a serverless personal command center, a Capacitor Android wrapper, and a Render blueprint for self-hosted documentation.
+
+| Component | Location | Live URL | Stack |
+| :--- | :--- | :--- | :--- |
+| **Portfolio** | [`app/`](app/) | [sidali-djeghbal.dev](https://sidali-djeghbal.dev) | Next.js 16, React 19, Tailwind CSS v4, OpenNext on Cloudflare Workers |
+| **Command Center** | [`tools/`](tools/) | [tools.sidali-djeghbal.dev](https://tools.sidali-djeghbal.dev) | Cloudflare Worker, D1 (SQLite), Vanilla ES6 SPA (PWA) |
+| **Android App** | [`android-app/`](android-app/) | [`command-center.apk`](command-center.apk) | Capacitor 8 Android WebView wrapper |
+| **Docs Blueprint** | [`render.yaml`](render.yaml) | [docs.sidali-djeghbal.dev](https://docs.sidali-djeghbal.dev) | Docmost Docker image + Render Key Value |
 
 ---
 
-## System Design
+## System Architecture
 
 ```mermaid
 flowchart TD
     Browser["Browser / Client"]
-    Phone["Android App (Capacitor)"]
+    Phone["Android App (Capacitor 8)"]
 
     subgraph Cloudflare["Cloudflare Edge"]
         subgraph Portfolio["Portfolio Worker (sidali-djeghbal.dev)"]
             Next["Next.js 16 App Router (OpenNext)"]
-            Assets1["Static Assets"]
+            Assets1["Static Assets & CV PDF"]
         end
 
         subgraph Tools["Command Center Worker (tools.sidali-djeghbal.dev)"]
             ToolsAPI["REST API (/api/*)"]
             ToolsSPA["Vanilla JS SPA (PWA)"]
             D1[("Cloudflare D1 (SQLite)")]
-            Cron["Cron Trigger (every 5 min)"]
+            Cron["Cron Trigger (*/5 * * * *)"]
         end
     end
 
     subgraph External["External APIs"]
-        GitHub["GitHub OAuth / GraphQL"]
+        GitHub["GitHub OAuth & GraphQL"]
         Waka["WakaTime API"]
-        Umami["Umami Analytics"]
     end
 
     subgraph Render["Render Infrastructure"]
         Docmost["Docmost (Docker)"]
-        Redis[("Render Key Value")]
-        Supabase[("Supabase Postgres")]
-        R2[("Cloudflare R2 Storage")]
+        Redis[("Render Key Value (redis://)")]
+        DB[("External Postgres (DATABASE_URL)")]
+        S3[("S3 / Cloudflare R2 (AWS_S3_*)")]
     end
 
     Browser --> Next
@@ -49,120 +59,124 @@ flowchart TD
 
     Next --> Waka
     Next --> GitHub
-    Next -.-> Umami
 
     ToolsSPA --> ToolsAPI
     ToolsAPI --> D1
     ToolsAPI <--> GitHub
 
-    Cron -->|Keep-alive ping| Docmost
+    Cron -->|"GET /api/health"| Docmost
     Docmost --> Redis
-    Docmost --> Supabase
-    Docmost --> R2
+    Docmost --> DB
+    Docmost --> S3
 ```
-
-### Architecture Details
-
-1. **Portfolio (`app/`)**
-   - Built on Next.js 16, React 19, and Tailwind CSS v4.
-   - Compiled with the React Compiler (`babel-plugin-react-compiler`) and packaged for Cloudflare Workers using `@opennextjs/cloudflare`.
-   - Uses React Server Components to fetch WakaTime stats on the server, while GitHub contribution stats are queried from a route handler (`/api/github-contributions`) via client-side SWR caching.
-   - Includes a custom WebGL fluid dynamics canvas (`SplashCursor`) with Navier-Stokes solvers, disabled automatically when `prefers-reduced-motion` is active.
-   - Page transitions and project preview hovers are animated with Motion and GSAP. Lenis handles smooth scrolling.
-   - Analytics (Umami) are proxied through Next.js rewrites (`/umami.js`, `/api/send`) to prevent adblock blocking.
-
-2. **Command Center (`tools/`)**
-   - Single Cloudflare Worker (`tools/index.js`) serving static assets from `tools/public/` and handling `/api/*` requests.
-   - Frontend is a vanilla JavaScript single-page app without build steps or external dependencies.
-   - Features: Bookmarks with drag-and-drop reordering, Kanban task board, habit tracker with annual heatmap, reading log with daily session tracking, and infrastructure links.
-   - PWA support via `manifest.webmanifest` and `sw.js`: stale-while-revalidate for static assets, network-first for GET requests, direct bypass for mutations and auth.
-   - Cron trigger (`*/5 * * * *`) pings the Render Docmost instance to prevent free-tier containers from idling.
-
-3. **Android Client (`android-app/`)**
-   - Wraps `tools.sidali-djeghbal.dev` using Capacitor 8.
-   - `MainActivity.java` enables third-party cookies on Android WebView to handle GitHub OAuth sessions properly.
-   - Overrides `onBackPressed` to navigate the SPA view history instead of closing the application.
-
-4. **Documentation Infrastructure (`render.yaml`)**
-   - Deploys the official `docmost/docmost:latest` Docker image to Render (Frankfurt).
-   - Uses Render Key Value (plain `redis://` protocol) to bypass Docmost's TLS Redis parser bug.
-   - PostgreSQL hosted on Supabase, media attachments stored in Cloudflare R2 using the S3 driver.
-
-### Authentication & Security
-
-- **GitHub OAuth 2.0**: Sign-in is restricted to usernames in `GITHUB_ALLOWED_USERS`.
-- **Anti-CSRF**: State tokens are generated cryptographically and validated via short-lived cookies (`cc_oauth_state`).
-- **Session Tokens**: HMAC-SHA256 signatures (`<expiry>.<login>.<hmac>`) stored in an `HttpOnly`, `Secure`, `SameSite=Lax` cookie valid for 30 days.
-- **Rate Limiting**: In-memory IP tracking limits `/api/auth/github` to 10 requests per 5 minutes.
-
-### Database Schema (Cloudflare D1)
-
-Managed via SQL migrations in `tools/migrations/`:
-
-- `bookmarks`: `id`, `title`, `url`, `position` (float for drag-and-drop reordering), `created_at`.
-- `tasks`: `id`, `title`, `notes`, `status` (`todo`, `doing`, `done`), `priority` (`none`, `low`, `med`, `high`), `position`, `completed_at`, `created_at`, `updated_at`.
-- `habits`: `id`, `name`, `emoji`, `archived`, `created_at`.
-- `habit_logs`: `habit_id` (foreign key), `day` (`YYYY-MM-DD`). Primary key `(habit_id, day)`.
-- `books`: `id`, `title`, `author`, `status` (`want`, `reading`, `finished`), `progress`, `total_pages`, `current_page`, `started_at`, `finished_at`, `link`, `notes`, timestamps.
-- `book_sessions`: `id`, `book_id` (foreign key), `day`, `pages`, `minutes`, `created_at`.
 
 ---
 
-## Technologies Used
+## Components
 
-- **Frontend & Web**: Next.js 16, React 19, React Compiler, TypeScript, Tailwind CSS v4, MDX, Motion, GSAP, Lenis, SWR, Radix UI, date-fns, WebGL.
-- **Command Center SPA**: Vanilla JavaScript (ES6), HTML5 Drag and Drop API, Service Worker API (PWA).
-- **Mobile**: Capacitor 8, Android SDK, Gradle, Java 21.
-- **Serverless & Database**: Cloudflare Workers, Cloudflare D1 (SQLite), Cloudflare R2 (S3 API), OpenNext Cloudflare adapter, Wrangler CLI.
-- **Infrastructure & Storage**: Docker, Render, PostgreSQL (Supabase), Redis (Render Key Value).
-- **Analytics & Telemetry**: Umami, LogRocket, Vercel Analytics, Vercel Speed Insights.
-- **Tooling**: Bun, Biome, Husky, Lint-Staged, Renovate.
+### 1. Portfolio (`app/`)
+
+- **Routes**:
+  - `/` — Hero introduction, social links, interactive `SplashCursor`, and CV PDF download (`public/Sidali_Djeghbal_Frontend_Engineer.pdf`).
+  - `/projects` — Selected projects (`app/projects/constants.ts`) with live demo / GitHub links, tech tags, and desktop hover preview modal (`GSAP` + `Motion`).
+  - `/experience` — Work history, open-source maintenance, education, and CV download.
+  - `/uses` — Hardware/software setup (`MDX`) plus categorized tech stack and soft skills.
+  - `/stats` — Dynamic server-rendered (`force-dynamic`) WakaTime stats (`Promise.all` with 5s timeout) and client-side SWR GitHub contribution calendar via `/api/github-contributions`.
+  - `/sitemap.xml` & `/robots.txt` — Generated via App Router metadata routes.
+- **Runtime & Rendering**:
+  - Next.js 16 (App Router) with React 19, React Compiler (`babel-plugin-react-compiler`), and Tailwind CSS v4, bundled for Cloudflare Workers via `@opennextjs/cloudflare`.
+  - `SplashCursor` (`app/components/splash-cursor.tsx`): WebGL Navier-Stokes fluid canvas on `/`, disabled when `prefers-reduced-motion` is active on non-touch devices, initialized lazily on first pointer/touch interaction, paused after 3s idle, with DPR capped (`1` mobile / `1.5` desktop).
+  - SEO & Analytics: JSON-LD (`Person` + `WebSite`), `public/llms.txt`, custom OG card (`scripts/og-image.svg` -> `public/og-image.png`), GTM/GA (`lazyOnload`), optional LogRocket (`NEXT_PUBLIC_LOGROCKET_ID`), and optional Umami rewrites (`/umami.js`, `/api/send`).
+
+### 2. Command Center (`tools/`)
+
+See [`tools/README.md`](tools/README.md) for the full endpoint reference and migration steps.
+
+- **Worker & Static Assets (`tools/index.js`, `tools/wrangler.jsonc`)**:
+  - Single Cloudflare Worker serving `tools/public/` via `ASSETS` (`run_worker_first: true`) with security headers (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`).
+  - JSON REST API under `/api/*` backed by Cloudflare D1 (`sidali-notes`).
+  - Cron trigger (`*/5 * * * *`) calling `https://docs.sidali-djeghbal.dev/api/health` to keep the Render Docmost container warm.
+  - Also serves `tools/public/command-center.apk` as a static asset.
+- **Frontend SPA & PWA (`tools/public/`)**:
+  - Zero-build ES6 vanilla JS single-page app (`app.js`, `index.html`, `styles.css`) with bookmarks, Kanban tasks, habits + heatmap, and reading log + sessions.
+  - Service worker (`sw.js`) uses stale-while-revalidate for static assets, network-first with cache fallback for `GET /api/*`, and network-only for `/api/auth/*`, `/api/logout`, and mutations.
+- **Auth & Security**:
+  - GitHub OAuth 2.0 restricted to usernames in `GITHUB_ALLOWED_USERS`.
+  - Anti-CSRF `cc_oauth_state` cookie (`10m` TTL) and HMAC-SHA256 `cc_session` cookie (`HttpOnly`, `Secure`, `SameSite=Lax`, `30d` TTL).
+  - In-memory per-IP rate limiting on `/api/auth/github` (10 requests per 5 minutes).
+- **D1 Schema (`tools/migrations/0001`–`0005`)**:
+  - `notes` (legacy from `0001`), `bookmarks`, `tasks` (with `status` and `priority`), `habits`, `habit_logs`, `books` (with `link`, `total_pages`, `current_page`), and `book_sessions`.
+
+### 3. Android App (`android-app/`)
+
+See [`android-app/README.md`](android-app/README.md) for install and build notes.
+
+- Capacitor 8 container (`dev.sidalidjeghbal.commandcenter`) configured in [`android-app/capacitor.config.ts`](android-app/capacitor.config.ts) to load `https://tools.sidali-djeghbal.dev` (`www/index.html` acts as the fallback shell).
+- [`MainActivity.java`](android-app/android/app/src/main/java/dev/sidalidjeghbal/commandcenter/MainActivity.java) enables third-party WebView cookies for GitHub OAuth and overrides `onBackPressed` to navigate WebView history before closing.
+- Compiled debug APKs are kept at [`command-center.apk`](command-center.apk) and [`tools/public/command-center.apk`](tools/public/command-center.apk).
+
+### 4. Documentation Infrastructure (`render.yaml`)
+
+- Deploys `docmost/docmost:latest` to Render (`frankfurt`, `free` plan) paired with a Render Key Value instance (`redis-eu`, plain `redis://` connection).
+- Requires external `DATABASE_URL` (Postgres) and `AWS_S3_ACCESS_KEY_ID` / `AWS_S3_SECRET_ACCESS_KEY` (configured for Cloudflare R2 S3-compatible storage).
 
 ---
 
 ## Monorepo Layout
 
-```
+```text
 sidali/
-├── app/                  # Next.js portfolio (sidali-djeghbal.dev)
-│   ├── api/              # API routes (GitHub GraphQL proxy)
-│   ├── components/       # UI components, WebGL canvas, analytics
-│   ├── projects/         # Projects showcase
-│   ├── stats/            # Live stats (GitHub + WakaTime)
-│   └── uses/             # Uses page (MDX)
-├── tools/                # Command Center (tools.sidali-djeghbal.dev)
-│   ├── migrations/       # D1 database migrations (0001 to 0005)
-│   ├── public/           # SPA assets, PWA manifest, service worker
-│   ├── index.js          # Worker code: REST API, OAuth, Cron trigger
-│   └── wrangler.jsonc    # Worker configuration
-├── android-app/          # Capacitor Android container
-│   ├── android/          # Native Android Gradle project
+├── app/                         # Next.js 16 portfolio (sidali-djeghbal.dev)
+│   ├── api/github-contributions # GitHub GraphQL contribution proxy
+│   ├── components/              # Hero, SplashCursor, WakaTime, GitHub graph, SEO, UI
+│   ├── experience/              # Work experience, education & CV page
+│   ├── projects/                # Projects showcase & hover preview
+│   ├── stats/                   # Dynamic stats page (GitHub + WakaTime)
+│   └── uses/                    # Setup (MDX) & skills page
+├── tools/                       # Command Center Worker (tools.sidali-djeghbal.dev)
+│   ├── migrations/              # D1 SQL migrations (0001 to 0005)
+│   ├── public/                  # Vanilla JS SPA, PWA assets, command-center.apk
+│   ├── index.js                 # Worker entrypoint (API, OAuth, cron)
+│   └── wrangler.jsonc           # Worker & D1 configuration
+├── android-app/                 # Capacitor 8 Android project
+│   ├── android/                 # Native Android Gradle project
+│   ├── www/                     # Minimal Capacitor fallback web dir
 │   └── capacitor.config.ts
-├── public/               # Static assets, robots, headers, llms.txt
-├── biome.json            # Biome linting and formatting configuration
-├── next.config.ts        # Next.js configuration and rewrites
-├── open-next.config.ts   # OpenNext Cloudflare configuration
-├── package.json          # Root dependencies and scripts
-└── render.yaml           # Render blueprint for Docmost and Redis
+├── public/                      # Portfolio static assets, CV PDF, og-image.png, llms.txt
+├── scripts/og-image.svg         # Source SVG for public/og-image.png
+├── command-center.apk           # Prebuilt debug APK
+├── package.json                 # Root scripts and dependencies
+├── pnpm-workspace.yaml          # pnpm workspace (. and android-app)
+├── biome.json                   # Biome linting & formatting config
+├── next.config.ts               # Next.js config & optional Umami rewrites
+├── open-next.config.ts          # OpenNext Cloudflare config
+├── wrangler.jsonc               # Portfolio Cloudflare Worker config
+└── render.yaml                  # Render blueprint for Docmost + Key Value
 ```
 
 ---
 
 ## Local Development
 
+### Prerequisites
+
+- Node.js & `pnpm` (`11.20.0`)
+- Java 21 + Android SDK (only needed for building the Android APK)
+
 ### 1. Portfolio
 
 ```bash
-bun install
+pnpm install
 cp .env.example .env.local
-bun run dev
+pnpm dev
 ```
 
-Optional variables in `.env.local`:
-- `GITHUB_TOKEN`: For GitHub contribution calendar.
-- `WAKATIME_SECRET_KEY`: For coding stats.
-- `NEXT_PUBLIC_LOGROCKET_ID`: For session recording.
-- `NEXT_PUBLIC_UMAMI_WEBSITE_ID` & `NEXT_PUBLIC_UMAMI_WEBSITE_URL`: For analytics.
+Optional environment variables in `.env.local` (see `.env.example`):
+
+- `GITHUB_TOKEN`: GitHub PAT for `/api/github-contributions`.
+- `WAKATIME_SECRET_KEY`: WakaTime API key for `/stats`.
+- `NEXT_PUBLIC_LOGROCKET_ID`: Enables LogRocket session replay in production.
+- `NEXT_PUBLIC_UMAMI_WEBSITE_ID` & `NEXT_PUBLIC_UMAMI_WEBSITE_URL`: Enables Umami analytics and `/umami.js` + `/api/send` rewrites.
 
 App runs at `http://localhost:3000`.
 
@@ -171,7 +185,6 @@ App runs at `http://localhost:3000`.
 ```bash
 cd tools
 
-# 1. Create tools/.dev.vars
 cat << EOF > .dev.vars
 GITHUB_CLIENT_ID=your-github-client-id
 GITHUB_CLIENT_SECRET=your-github-client-secret
@@ -179,31 +192,27 @@ GITHUB_ALLOWED_USERS=your-username
 LOCAL_ORIGIN=http://localhost:8787
 EOF
 
-# 2. Apply migrations to local D1
-npx wrangler d1 execute sidali-notes --local --file migrations/0001_init.sql
-npx wrangler d1 execute sidali-notes --local --file migrations/0002_command_center.sql
-npx wrangler d1 execute sidali-notes --local --file migrations/0003_reading_tracker.sql
-npx wrangler d1 execute sidali-notes --local --file migrations/0004_books_link.sql
-npx wrangler d1 execute sidali-notes --local --file migrations/0005_tasks_priority.sql
+pnpm exec wrangler d1 execute sidali-notes --local --file migrations/0001_init.sql
+pnpm exec wrangler d1 execute sidali-notes --local --file migrations/0002_command_center.sql
+pnpm exec wrangler d1 execute sidali-notes --local --file migrations/0003_reading_tracker.sql
+pnpm exec wrangler d1 execute sidali-notes --local --file migrations/0004_books_link.sql
+pnpm exec wrangler d1 execute sidali-notes --local --file migrations/0005_tasks_priority.sql
 
-# 3. Start local worker
-npx wrangler dev --port 8787
+pnpm exec wrangler dev --port 8787
 ```
 
 App runs at `http://localhost:8787`.
 
 ### 3. Android App
 
-Requires Java 21 and Android SDK.
-
 ```bash
 cd android-app
-bun x cap sync android
+pnpm exec cap sync android
 cd android
-./gradlew assembleDebug
+JAVA_HOME=/usr/lib/jvm/java-21-openjdk ANDROID_HOME=$HOME/Android/Sdk ./gradlew assembleDebug
 ```
 
-Output APK: `android-app/android/app/build/outputs/apk/debug/app-debug.apk`
+Output APK: `android-app/android/app/build/outputs/apk/debug/app-debug.apk`.
 
 ---
 
@@ -212,33 +221,32 @@ Output APK: `android-app/android/app/build/outputs/apk/debug/app-debug.apk`
 ### Portfolio (Cloudflare Workers)
 
 ```bash
-bun run deploy
+pnpm run deploy
 ```
+
+Set runtime secrets (`GITHUB_TOKEN`, `WAKATIME_SECRET_KEY`) on the `sidali` Worker via `pnpm exec wrangler secret put`.
 
 ### Command Center (Cloudflare Worker + D1)
 
 ```bash
 cd tools
 
-# Set secrets
-npx wrangler secret put GITHUB_CLIENT_ID
-npx wrangler secret put GITHUB_CLIENT_SECRET
-npx wrangler secret put GITHUB_ALLOWED_USERS
+pnpm exec wrangler secret put GITHUB_CLIENT_ID
+pnpm exec wrangler secret put GITHUB_CLIENT_SECRET
+pnpm exec wrangler secret put GITHUB_ALLOWED_USERS
 
-# Apply migrations to remote D1
-npx wrangler d1 execute sidali-notes --remote --file migrations/0002_command_center.sql
-npx wrangler d1 execute sidali-notes --remote --file migrations/0003_reading_tracker.sql
-npx wrangler d1 execute sidali-notes --remote --file migrations/0004_books_link.sql
-npx wrangler d1 execute sidali-notes --remote --file migrations/0005_tasks_priority.sql
+pnpm exec wrangler d1 execute sidali-notes --remote --file migrations/0002_command_center.sql
+pnpm exec wrangler d1 execute sidali-notes --remote --file migrations/0003_reading_tracker.sql
+pnpm exec wrangler d1 execute sidali-notes --remote --file migrations/0004_books_link.sql
+pnpm exec wrangler d1 execute sidali-notes --remote --file migrations/0005_tasks_priority.sql
 
-# Deploy
-npx wrangler deploy
+pnpm exec wrangler deploy
 ```
 
 ### Docmost (Render)
 
-1. Connect the repository in Render using **New > Blueprint Instance**.
-2. Configure `DATABASE_URL` (Supabase Postgres) and `AWS_S3_*` (Cloudflare R2 keys) in the dashboard.
+1. Connect the repository in Render using **New > Blueprint Instance** (reads `render.yaml`).
+2. Set `DATABASE_URL`, `AWS_S3_ACCESS_KEY_ID`, and `AWS_S3_SECRET_ACCESS_KEY` in the Render dashboard.
 3. Deploy.
 
 ---
@@ -247,11 +255,15 @@ npx wrangler deploy
 
 | Script | Purpose |
 | :--- | :--- |
-| `bun run dev` | Start Next.js development server |
-| `bun run build` | Next.js production build |
-| `bun run preview` | Build and preview Cloudflare Worker locally |
-| `bun run deploy` | Build and deploy portfolio to Cloudflare Workers |
-| `bun run check` | Run Biome lint checks |
-| `bun run lint` | Run Biome and apply safe fixes |
-| `bun run format` | Format codebase with Biome |
-| `bun run cf-typegen` | Generate TypeScript types for Cloudflare bindings |
+| `pnpm dev` | Start Next.js development server |
+| `pnpm build` | Build Next.js production bundle |
+| `pnpm serve` | Start Next.js Node production server |
+| `pnpm preview` | Build and preview OpenNext Cloudflare Worker locally |
+| `pnpm run deploy` | Build and deploy portfolio to Cloudflare Workers |
+| `pnpm upload` | Build and upload OpenNext Worker bundle |
+| `pnpm cf-typegen` | Generate TypeScript types for Cloudflare bindings |
+| `pnpm check` | Run Biome lint & format checks |
+| `pnpm lint` | Run Biome check with safe auto-fixes |
+| `pnpm format` | Format codebase with Biome |
+| `pnpm test` | Run Biome check and TypeScript (`tsc --noEmit`) |
+| `pnpm db:backup` | Export remote D1 database (`sidali-notes`) to `d1-backup.sql` |
