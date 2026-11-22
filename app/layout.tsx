@@ -14,12 +14,11 @@ const siteUrl = 'https://sidali-djeghbal.dev';
 export const metadata: Metadata = {
 	metadataBase: new URL(siteUrl),
 	title: {
-		default:
-			'Sidali DJEGHBAL | AI Engineering Undergrad & Full-Stack Developer',
+		default: 'Sidali DJEGHBAL | Frontend & UI Engineer',
 		template: '%s | Sidali DJEGHBAL',
 	},
 	description:
-		"I'm Sidali DJEGHBAL — an AI Engineering undergrad and full-stack developer building accessible, scalable web platforms that matter. Explore my projects, experience, and the tools I use.",
+		"I'm Sidali DJEGHBAL — a Frontend & UI Engineer specializing in interactive React, Next.js, and TypeScript applications, data-intensive dashboards, and accessible multilingual/RTL interfaces. Explore my projects, experience, and tools.",
 	applicationName: 'Sidali DJEGHBAL',
 	authors: [{ name: 'Sidali DJEGHBAL', url: siteUrl }],
 	creator: 'Sidali DJEGHBAL',
@@ -28,10 +27,16 @@ export const metadata: Metadata = {
 	keywords: [
 		'Sidali DJEGHBAL',
 		'sidali djeghbal',
-		'AI engineering',
-		'AI engineer',
-		'full-stack developer',
-		'full stack engineer',
+		'Frontend & UI Engineer',
+		'frontend engineer',
+		'UI engineer',
+		'React 19',
+		'Next.js',
+		'TypeScript',
+		'RTL/LTR',
+		'WCAG Accessibility',
+		'Vitest',
+		'Playwright',
 		'web developer',
 		'software engineer',
 		'portfolio',
@@ -42,25 +47,25 @@ export const metadata: Metadata = {
 		type: 'website',
 		url: siteUrl,
 		siteName: 'Sidali DJEGHBAL',
-		title: 'Sidali DJEGHBAL | AI Engineering Undergrad & Full-Stack Developer',
+		title: 'Sidali DJEGHBAL | Frontend & UI Engineer',
 		description:
-			'AI Engineering Undergrad & Full-Stack Developer building accessible, scalable web platforms that matter.',
+			'Frontend & UI Engineer specializing in interactive React, Next.js, and TypeScript apps, data-intensive dashboards, and accessible RTL/LTR interfaces.',
 		locale: 'en_US',
 		images: [
 			{
 				url: '/og-image.png',
 				width: 1200,
 				height: 630,
-				alt: 'Sidali DJEGHBAL — AI Engineering Undergrad & Full-Stack Developer',
+				alt: 'Sidali DJEGHBAL — Frontend & UI Engineer',
 				type: 'image/png',
 			},
 		],
 	},
 	twitter: {
 		card: 'summary_large_image',
-		title: 'Sidali DJEGHBAL | AI Engineering Undergrad & Full-Stack Developer',
+		title: 'Sidali DJEGHBAL | Frontend & UI Engineer',
 		description:
-			'AI Engineering Undergrad & Full-Stack Developer building accessible, scalable web platforms that matter.',
+			'Frontend & UI Engineer specializing in interactive React, Next.js, and TypeScript apps, data-intensive dashboards, and accessible RTL/LTR interfaces.',
 		images: ['/og-image.png'],
 	},
 	robots: {

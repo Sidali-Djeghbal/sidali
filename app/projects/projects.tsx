@@ -36,7 +36,10 @@ export default function Projects() {
 						title={project.title}
 						description={project.description}
 						url={project.url}
+						githubUrl={project.githubUrl}
 						role={project.role}
+						date={project.date}
+						tags={project.tags}
 						setModal={setModal}
 					/>
 				</motion.div>

@@ -12,7 +12,7 @@ export default function UsesTitle() {
 					target='_blank'
 					rel='noreferrer'
 				>
-					Wes bos
+					Wes Bos
 				</a>
 			</span>
 		</div>

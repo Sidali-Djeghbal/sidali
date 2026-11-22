@@ -2,21 +2,25 @@ import classNames from 'classnames';
 import Link from 'next/link';
 import { merryWeather } from '../../fonts';
 import { AtSignIcon } from '../layouts/icons/at-sign-icon';
+import { DownloadIcon } from '../layouts/icons/download-icon';
 import { GithubIcon } from '../layouts/icons/github-icon';
 import { LinkedinIcon } from '../layouts/icons/linkedin-icon';
 import SplashCursor from '../splash-cursor';
 
 export default function Hero() {
 	return (
-		<main className='relative min-h-svh w-screen overflow-hidden'>
+		<main className='relative min-h-svh w-screen overflow-x-hidden'>
 			<SplashCursor
 				containerClassName='min-h-svh w-screen'
 				usePrimaryColors={true}
 			>
 				<div
-					className={classNames('relative min-h-svh', merryWeather.className)}
+					className={classNames(
+						'relative flex min-h-svh items-center py-16 md:py-24',
+						merryWeather.className,
+					)}
 				>
-					<div className='absolute top-[20%] md:top-[40%] max-w-5xl flex-col space-y-4 justify-center px-8 md:px-24 lg:ml-14'>
+					<div className='max-w-5xl flex-col space-y-4 justify-center px-8 md:px-24 lg:ml-14'>
 						<h1 className='text-2xl font-medium md:mr-4 md:text-4xl'>
 							Welcome to my{' '}
 							<span className='font-bold'>personal portfolio — </span> an{' '}
@@ -25,12 +29,15 @@ export default function Hero() {
 							</span>{' '}
 							playground on the web.
 						</h1>
-						<section className='relative z-10'>
-							<p className='text-base text-justify'>
-								I&apos;m Sidali DJEGHBAL — an AI Engineering undergrad and
-								full-stack developer, I build accessible, scalable web platforms
-								that matter. I build things that ship — fast, accessible, and
-								with purpose.
+						<section className='relative z-10 space-y-2'>
+							<p className='text-base text-left md:text-justify'>
+								I&apos;m Sidali DJEGHBAL — a Frontend &amp; UI Engineer
+								specializing in interactive React, Next.js, and TypeScript
+								applications, data-intensive dashboards, and accessible
+								multilingual/RTL interfaces.
+							</p>
+							<p className='text-xs text-gray-600 dark:text-gray-400'>
+								Algeria (UTC+1) · Available for remote frontend roles
 							</p>
 						</section>
 						<section className='relative z-10 flex flex-col gap-6 items-start text-sm md:flex-row md:flex-wrap md:items-center'>
@@ -67,12 +74,22 @@ export default function Hero() {
 							</div>
 							<div className='hidden h-14 border-l border-gray-300 md:block' />
 							<div
-								className='flex flex-wrap gap-x-3 gap-y-1'
+								className='flex flex-wrap items-center gap-x-3 gap-y-1'
 								data-skip-splash-cursor
 							>
 								<Link href='/projects'>/projects</Link>
+								<Link href='/experience'>/experience</Link>
 								<Link href='/uses'>/uses</Link>
 								<Link href='/stats'>/stats</Link>
+								<a
+									href='/Sidali_Djeghbal_Frontend_Engineer.pdf'
+									download='Sidali_Djeghbal_Frontend_Engineer.pdf'
+									aria-label='Download CV (PDF)'
+									className='inline-flex items-center gap-1.5 rounded-full border border-gray-300 px-3 py-1 text-xs font-medium transition-colors hover:border-primary-500 hover:bg-primary-500 hover:text-white dark:border-gray-700 dark:hover:text-black'
+								>
+									<DownloadIcon size={13} aria-hidden='true' />
+									<span>CV</span>
+								</a>
 							</div>
 						</section>
 					</div>

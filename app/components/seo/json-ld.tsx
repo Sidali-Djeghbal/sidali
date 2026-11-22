@@ -6,20 +6,44 @@ const personSchema = {
 	name: 'Sidali DJEGHBAL',
 	url: siteUrl,
 	image: `${siteUrl}/og-image.png`,
-	jobTitle: 'AI Engineering Undergrad & Full-Stack Developer',
+	jobTitle: 'Frontend & UI Engineer',
 	description:
-		'AI Engineering Undergrad and Full-Stack Developer building accessible, scalable web platforms that matter.',
+		'Frontend & UI Engineer specializing in interactive React, Next.js, and TypeScript applications, data-intensive dashboards, and accessible multilingual/RTL web interfaces.',
 	email: 'mailto:connect@sidali-djeghbal.dev',
+	address: {
+		'@type': 'PostalAddress',
+		addressCountry: 'Algeria',
+	},
+	worksFor: {
+		'@type': 'Organization',
+		name: 'Algerian Tech Makers',
+		parentOrganization: {
+			'@type': 'Organization',
+			name: 'Bunian',
+			url: 'https://bunian.online',
+		},
+	},
+	alumniOf: {
+		'@type': 'CollegeOrUniversity',
+		name: 'University of 8th May 1945 at Guelma',
+	},
+	knowsLanguage: ['en', 'fr', 'ar'],
 	sameAs: [
 		'https://www.linkedin.com/in/sidali-djeghbal',
 		'https://github.com/sidali-djeghbal',
 	],
 	knowsAbout: [
-		'Artificial Intelligence',
-		'Full-Stack Web Development',
-		'Accessible Web Design',
-		'Scalable Architecture',
-		'Software Engineering',
+		'Frontend Engineering',
+		'UI Engineering',
+		'React 19',
+		'Next.js',
+		'TypeScript',
+		'RTL/LTR Web Interfaces',
+		'WCAG Accessibility',
+		'Vitest',
+		'Playwright',
+		'Geospatial Web Applications',
+		'Visual Block Editors',
 	],
 };
 
@@ -29,7 +53,7 @@ const websiteSchema = {
 	name: 'Sidali DJEGHBAL',
 	url: siteUrl,
 	description:
-		'AI Engineering Undergrad & Full-Stack Developer building accessible, scalable web platforms that matter.',
+		'Frontend & UI Engineer specializing in interactive React, Next.js, and TypeScript applications, data-intensive dashboards, and accessible multilingual/RTL web interfaces.',
 	inLanguage: 'en',
 	author: {
 		'@type': 'Person',

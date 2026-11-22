@@ -4,7 +4,10 @@ export interface Project {
 	src: string;
 	color: string;
 	url?: string;
+	githubUrl?: string;
 	role: string;
+	date?: string;
+	tags?: string[];
 }
 
 export interface ProjectModal {

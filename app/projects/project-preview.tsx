@@ -31,6 +31,8 @@ const scaleAnimation = {
 
 export default function ProjectPreview({ modal, projects }: ProjectModalProps) {
 	const { active, index } = modal;
+	const activeProject = projects[index];
+	const hasLink = Boolean(activeProject?.url || activeProject?.githubUrl);
 	const modalContainer = useRef<HTMLDivElement>(null);
 	const cursor = useRef<HTMLDivElement>(null);
 	const cursorLabel = useRef<HTMLDivElement>(null);
@@ -88,7 +90,7 @@ export default function ProjectPreview({ modal, projects }: ProjectModalProps) {
 	return (
 		<>
 			<motion.div
-				className='pointer-events-none absolute flex h-[250px] w-[350px] items-center justify-center overflow-hidden bg-white'
+				className='pointer-events-none absolute z-20 flex h-[250px] w-[350px] items-center justify-center overflow-hidden bg-white'
 				ref={modalContainer}
 				variants={scaleAnimation}
 				initial='initial'
@@ -105,16 +107,16 @@ export default function ProjectPreview({ modal, projects }: ProjectModalProps) {
 						const { src, color } = project;
 						return (
 							<div
-								className='flex h-full w-full items-center justify-center'
+								className='flex h-full w-full items-center justify-center p-4'
 								style={{ backgroundColor: color }}
 								key={`modal_${src}`}
 							>
 								<Image
-									className='h-full w-full'
+									className='h-auto max-h-[218px] w-auto max-w-[318px] object-contain shadow-xs'
 									src={`/static/images/project/${src}`}
-									width={300}
-									height={280}
-									alt='image'
+									width={318}
+									height={218}
+									alt={project.title}
 								/>
 							</div>
 						);
@@ -122,18 +124,18 @@ export default function ProjectPreview({ modal, projects }: ProjectModalProps) {
 				</div>
 			</motion.div>
 			<motion.div
-				className='font-base pointer-events-none absolute z-10 flex h-16 w-16 items-center justify-center rounded-full bg-gray-300 font-light'
+				className='font-base pointer-events-none absolute z-30 flex h-16 w-16 items-center justify-center rounded-full bg-gray-300 font-light'
 				ref={cursor}
 				variants={scaleAnimation}
 				initial='initial'
-				animate={active ? 'enter' : 'closed'}
+				animate={active && hasLink ? 'enter' : 'closed'}
 			></motion.div>
 			<motion.div
-				className='font-base pointer-events-none absolute z-10 flex h-16 w-16 items-center justify-center rounded-full bg-transparent font-light text-black'
+				className='font-base pointer-events-none absolute z-30 flex h-16 w-16 items-center justify-center rounded-full bg-transparent font-light text-black'
 				ref={cursorLabel}
 				variants={scaleAnimation}
 				initial='initial'
-				animate={active ? 'enter' : 'closed'}
+				animate={active && hasLink ? 'enter' : 'closed'}
 			>
 				View
 			</motion.div>

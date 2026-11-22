@@ -1,23 +1,42 @@
 # Sidali DJEGHBAL
 
-> Sidali DJEGHBAL is an AI Engineering undergraduate and full-stack developer building accessible, scalable web platforms. He builds things that ship — fast, accessible, and with purpose. This site showcases his portfolio: selected projects, experience, the tools he uses, and live stats.
+> Sidali DJEGHBAL is a Frontend & UI Engineer specializing in high-interactivity React, Next.js, and TypeScript applications, data-intensive dashboards, and accessible multilingual/RTL web interfaces. He ships end-to-end tested production web platforms, visual block editors, and custom CMS tools for remote teams.
 
 ## Key pages
 
-- [Home](https://sidali-djeghbal.dev/): Personal introduction, current role, and contact links (LinkedIn, GitHub, email).
-- [Projects](https://sidali-djeghbal.dev/projects): Selected projects worth sharing, with previews and tech details.
-- [Uses](https://sidali-djeghbal.dev/uses): The tools, software, and gear Sidali uses for development.
+- [Home](https://sidali-djeghbal.dev/): Personal introduction, current role, CV download, and contact links.
+- [Projects](https://sidali-djeghbal.dev/projects): Selected projects with live demos, GitHub repositories, previews, and tech stacks.
+- [Experience](https://sidali-djeghbal.dev/experience): Work history, open-source maintenance, education, and downloadable CV.
+- [Uses](https://sidali-djeghbal.dev/uses): Daily tools, software, and technical stack.
 - [Stats](https://sidali-djeghbal.dev/stats): Live personal stats gathered from public APIs (GitHub contributions, WakaTime).
+- [CV (PDF)](https://sidali-djeghbal.dev/Sidali_Djeghbal_Frontend_Engineer.pdf): Downloadable Frontend & UI Engineer resume.
 
 ## Contact
 
+- Location: Algeria (UTC+1) · Available for remote frontend roles
 - Email: connect@sidali-djeghbal.dev
 - LinkedIn: https://www.linkedin.com/in/sidali-djeghbal
-- GitHub: https://github.com/sidali-djeghbal
+- GitHub: https://github.com/Sidali-Djeghbal
 
 ## Profile
 
 - Name: Sidali DJEGHBAL
-- Role: AI Engineering Undergrad & Full-Stack Developer
-- Employer: Algerian Tech Makers (Full-Stack Engineer)
-- Focus areas: artificial intelligence, full-stack web development, accessible design, scalable architecture.
+- Role: Frontend & UI Engineer
+- Current Position: Frontend Engineer (Full Stack) at Algerian Tech Makers (tech branch of Bunian) · Remote (Mar 2026 – Present)
+- Languages: English, French, Arabic
+- Education: State Engineer Degree (Ingénieur d'État — Master's Equivalent) in Computer Science (AI Specialization), University of 8th May 1945 at Guelma, Algeria (Oct 2023 – Expected Jun 2028, 4th Year)
+- Focus areas: React 19, Next.js (App Router / RSC), TypeScript, Tailwind CSS, RTL/LTR layout, WCAG accessibility, TanStack Query, Zod, Vitest, Playwright, Cloudflare Workers.
+
+## Experience
+
+- Algerian Tech Makers (tech branch of Bunian) — Frontend Engineer (Full Stack), Remote (Mar 2026 – Present): Architected Bunian's responsive bidirectional (RTL/LTR) Next.js public web platform with RSC, JSON-LD, and dynamic sitemaps; built a custom React-Admin CMS and drag-and-drop block newsletter composer.
+- TechGeeks — Frontend Engineer, Hybrid (Oct 2024 – Jan 2026): Engineered the SolveIt 3.0 interactive learning interface (embedded code editor, 3D dashboard, side-by-side Blockly-to-C code generator) and step-by-step algorithm walkthroughs.
+- Daad Blockly — Author & Maintainer, Remote / Open Source (May 2025 – Aug 2025): Built a visual-to-source code generator and 50+ custom Blockly definitions backed by a DOM-free core state layer tested with Vitest, plus multi-OS Electron release pipelines.
+
+## Featured Projects
+
+- FELLAHTECH — Geospatial Crop-Rotation Workspace (Nov 2026): Trilingual (EN/FR/AR with full RTL mirroring) Next.js 15 & TypeScript workspace on Cloudflare Workers with Turf.js CAD polygon editor, MapLibre GL 3D terrain, NASA GIBS raster overlays, and a Zod-validated TanStack Query AI Intelligence Studio. Live: https://fieldshift-planner.sidalidjeghbal.workers.dev | GitHub: https://github.com/Sidali-Djeghbal/Fellahtech-fieldshift-planner
+- Bunian — Official Website & CMS: Bidirectional Next.js RSC public platform (https://bunian.online) and custom React-Admin CMS with newsletter block composer built with Algerian Tech Makers.
+- Hodory — Attendance System (Jan 2026): React Native (Expo Router) student client + Next.js/Electron admin & teacher desktop apps backed by FastAPI + JWT. GitHub: https://github.com/Sidali-Djeghbal/hodory-attendance-system
+- Daad Blockly: Open-source visual-to-source Blockly coding IDE for the DAAD language. GitHub: https://github.com/daadLang/daad-blockly
+- SolveIt 3.0: Interactive competitive programming learning interface with 3D dashboard and Blockly-to-C generator. Live: https://solve-it-black-hole-edition.vercel.app/
