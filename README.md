@@ -174,7 +174,7 @@ pnpm dev
 Optional environment variables in `.env.local` (see `.env.example`):
 
 - `GITHUB_TOKEN`: GitHub PAT for `/api/github-contributions`.
-- `WAKATIME_SECRET_KEY`: WakaTime API key for `/stats`.
+- `WAKATIME_SECRET_KEY`: WakaTime Personal OAuth Token (from `https://wakatime.com/oauth`) for `/stats`.
 - `NEXT_PUBLIC_LOGROCKET_ID`: Enables LogRocket session replay in production.
 - `NEXT_PUBLIC_UMAMI_WEBSITE_ID` & `NEXT_PUBLIC_UMAMI_WEBSITE_URL`: Enables Umami analytics and `/umami.js` + `/api/send` rewrites.
 
