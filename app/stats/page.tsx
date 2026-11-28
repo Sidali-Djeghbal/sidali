@@ -1,13 +1,9 @@
 import type { Metadata } from 'next';
-import { Suspense } from 'react';
 import GithubContributions from '../components/github-contributions/github-contributions';
 import Header from '../components/header';
 import WakaStats from '../components/wakatime/wakastats';
-import WakatimeSkeleton from '../components/wakatime/wakatime-skeleton';
 
 const siteUrl = 'https://sidali-djeghbal.dev';
-
-export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
 	title: 'Stats',
@@ -31,9 +27,7 @@ export default function StatsPage() {
 
 			<section className='space-y-3'>
 				<GithubContributions />
-				<Suspense fallback={<WakatimeSkeleton />}>
-					<WakaStats />
-				</Suspense>
+				<WakaStats />
 			</section>
 		</div>
 	);

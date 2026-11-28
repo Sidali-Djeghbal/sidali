@@ -43,7 +43,7 @@ flowchart TD
 
     subgraph External["External APIs"]
         GitHub["GitHub OAuth & GraphQL"]
-        Waka["WakaTime API"]
+        Waka["WakaTime Share SVG"]
     end
 
     subgraph Render["Render Infrastructure"]
@@ -57,7 +57,7 @@ flowchart TD
     Browser --> ToolsSPA
     Phone --> ToolsSPA
 
-    Next --> Waka
+    Browser -.-> Waka
     Next --> GitHub
 
     ToolsSPA --> ToolsAPI
@@ -81,7 +81,7 @@ flowchart TD
   - `/projects` — Selected projects (`app/projects/constants.ts`) with live demo / GitHub links, tech tags, and desktop hover preview modal (`GSAP` + `Motion`).
   - `/experience` — Work history, open-source maintenance, education, and CV download.
   - `/uses` — Hardware/software setup (`MDX`) plus categorized tech stack and soft skills.
-  - `/stats` — Dynamic server-rendered (`force-dynamic`) WakaTime stats (`Promise.all` with 5s timeout) and client-side SWR GitHub contribution calendar via `/api/github-contributions`.
+  - `/stats` — Static page embedding the public WakaTime SVG chart alongside a client-side SWR GitHub contribution calendar via `/api/github-contributions`.
   - `/sitemap.xml` & `/robots.txt` — Generated via App Router metadata routes.
 - **Runtime & Rendering**:
   - Next.js 16 (App Router) with React 19, React Compiler (`babel-plugin-react-compiler`), and Tailwind CSS v4, bundled for Cloudflare Workers via `@opennextjs/cloudflare`.
@@ -131,7 +131,7 @@ sidali/
 │   ├── components/              # Hero, SplashCursor, WakaTime, GitHub graph, SEO, UI
 │   ├── experience/              # Work experience, education & CV page
 │   ├── projects/                # Projects showcase & hover preview
-│   ├── stats/                   # Dynamic stats page (GitHub + WakaTime)
+│   ├── stats/                   # Stats page (GitHub + WakaTime embed)
 │   └── uses/                    # Setup (MDX) & skills page
 ├── tools/                       # Command Center Worker (tools.sidali-djeghbal.dev)
 │   ├── migrations/              # D1 SQL migrations (0001 to 0005)
@@ -174,7 +174,6 @@ pnpm dev
 Optional environment variables in `.env.local` (see `.env.example`):
 
 - `GITHUB_TOKEN`: GitHub PAT for `/api/github-contributions`.
-- `WAKATIME_SECRET_KEY`: WakaTime Personal OAuth Token (from `https://wakatime.com/oauth`) for `/stats`.
 - `NEXT_PUBLIC_LOGROCKET_ID`: Enables LogRocket session replay in production.
 - `NEXT_PUBLIC_UMAMI_WEBSITE_ID` & `NEXT_PUBLIC_UMAMI_WEBSITE_URL`: Enables Umami analytics and `/umami.js` + `/api/send` rewrites.
 
@@ -224,7 +223,7 @@ Output APK: `android-app/android/app/build/outputs/apk/debug/app-debug.apk`.
 pnpm run deploy
 ```
 
-Set runtime secrets (`GITHUB_TOKEN`, `WAKATIME_SECRET_KEY`) on the `sidali` Worker via `pnpm exec wrangler secret put`.
+Set the runtime secret `GITHUB_TOKEN` on the `sidali` Worker via `pnpm exec wrangler secret put`.
 
 ### Command Center (Cloudflare Worker + D1)
 

@@ -1,7 +1,9 @@
 import createMDX from '@next/mdx';
 import type { NextConfig } from 'next';
 
-const umami_url = process.env.NEXT_PUBLIC_UMAMI_WEBSITE_URL ?? '';
+const umami_url = (process.env.NEXT_PUBLIC_UMAMI_WEBSITE_URL ?? '')
+	.trim()
+	.replace(/\/+$/, '');
 
 const nextConfig: NextConfig = {
 	reactStrictMode: true,
